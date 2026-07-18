@@ -74,7 +74,16 @@ const expenseSchema = new mongoose.Schema(
           required: true
         }
       }
-    ]
+    ],
+    recordedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    type: {
+      type: String,
+      enum: ["expense", "settlement"],
+      default: "expense",
+    },
   },
   { timestamps: true }
 );

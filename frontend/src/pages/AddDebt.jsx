@@ -1,308 +1,161 @@
-// import { useEffect, useState } from "react";
-// import api from "../api/api";
-// import { useNavigate } from "react-router-dom";
-
-// export default function AddDebt() {
-//   const [users, setUsers] = useState([]);
-//   const [selectedUser, setSelectedUser] = useState("");
-//   const [amount, setAmount] = useState("");
-//   const [description, setDescription] = useState("");
-//   const [type, setType] = useState("they_owe_me"); // default
-
-//   const navigate = useNavigate();
-//   const user = JSON.parse(localStorage.getItem("user"));
-
-//   useEffect(() => {
-//     loadUsers();
-//   }, []);
-
-//   const loadUsers = async () => {
-//     try {
-//       const res = await api.get("/groups/users"); // reuse existing endpoint
-//       const filtered = res.data.filter(u => u._id !== user.id);
-//       setUsers(filtered);
-//     } catch (err) {
-//       console.error("Failed to load users", err);
-//     }
-//   };
-
-//   const handleSubmit = async () => {
-//     if (!selectedUser || !amount) {
-//       alert("Please select user and enter amount");
-//       return;
-//     }
-
-//     const payload = {
-//       amount: Number(amount),
-//       description
-//     };
-
-//     if (type === "they_owe_me") {
-//       // Ram took money from me
-//       payload.from = selectedUser;
-//       payload.to = user.id;
-//     } else {
-//       // I took money from Ram
-//       payload.from = user.id;
-//       payload.to = selectedUser;
-//     }
-
-//     try {
-//       await api.post("/debts", payload);
-//       navigate("/dashboard");
-//     } catch (err) {
-//       console.error("Failed to add debt", err);
-//     }
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-gray-50 px-6 py-10">
-//       <div className="max-w-xl mx-auto bg-white shadow rounded-xl p-6 space-y-6">
-
-//         <h2 className="text-2xl font-bold text-gray-800">
-//           Add Personal Debt
-//         </h2>
-
-//         {/* Select User */}
-//         <div>
-//           <label className="block text-sm font-medium mb-2">
-//             Select Person
-//           </label>
-//           <select
-//             className="w-full border rounded-lg px-4 py-2"
-//             value={selectedUser}
-//             onChange={(e) => setSelectedUser(e.target.value)}
-//           >
-//             <option value="">-- Select --</option>
-//             {users.map((u) => (
-//               <option key={u._id} value={u._id}>
-//                 {u.name} ({u.email})
-//               </option>
-//             ))}
-//           </select>
-//         </div>
-
-//         {/* Type */}
-//         <div>
-//           <label className="block text-sm font-medium mb-2">
-//             Type
-//           </label>
-//           <select
-//             className="w-full border rounded-lg px-4 py-2"
-//             value={type}
-//             onChange={(e) => setType(e.target.value)}
-//           >
-//             <option value="they_owe_me">
-//               They took money from me
-//             </option>
-//             <option value="i_owe_them">
-//               I took money from them
-//             </option>
-//           </select>
-//         </div>
-
-//         {/* Amount */}
-//         <div>
-//           <label className="block text-sm font-medium mb-2">
-//             Amount
-//           </label>
-//           <input
-//             type="number"
-//             className="w-full border rounded-lg px-4 py-2"
-//             placeholder="Enter amount"
-//             value={amount}
-//             onChange={(e) => setAmount(e.target.value)}
-//           />
-//         </div>
-
-//         {/* Description */}
-//         <div>
-//           <label className="block text-sm font-medium mb-2">
-//             Description
-//           </label>
-//           <input
-//             type="text"
-//             className="w-full border rounded-lg px-4 py-2"
-//             placeholder="Why this money?"
-//             value={description}
-//             onChange={(e) => setDescription(e.target.value)}
-//           />
-//         </div>
-
-//         {/* Buttons */}
-//         <div className="flex gap-4">
-//           <button
-//             onClick={handleSubmit}
-//             className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
-//           >
-//             Save
-//           </button>
-
-//           <button
-//             onClick={() => navigate("/dashboard")}
-//             className="flex-1 bg-gray-300 py-2 rounded-lg"
-//           >
-//             Cancel
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
 import { useEffect, useState } from "react";
 import api from "../api/api";
 import { useNavigate } from "react-router-dom";
+import DateTimeFields from "../components/DateTimeFields";
+import AmountInput from "../components/AmountInput";
+import PersonSelectList from "../components/PersonSelectList";
+import { getStoredUserId } from "../utils/auth";
+import SlowLoadHint from "../components/ui/SlowLoadHint";
+import { getApiErrorMessage } from "../utils/apiErrors";
+import { combineDateAndTime, getNowDateString, getNowTimeString } from "../utils/format";
+import { isSameUser } from "../utils/debt";
 
 export default function AddDebt() {
-    const [users, setUsers] = useState([]);
-    const [selectedUser, setSelectedUser] = useState("");
-    const [amount, setAmount] = useState("");
-    const [description, setDescription] = useState("");
-    const [type, setType] = useState("they_owe_me"); // default
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState("");
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [type, setType] = useState("they_owe_me");
+  const [date, setDate] = useState(getNowDateString());
+  const [time, setTime] = useState(getNowTimeString());
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-    const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem("user"));
+  const navigate = useNavigate();
+  const myId = getStoredUserId();
 
-    useEffect(() => {
-        loadUsers();
-    }, []);
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
-    const loadUsers = async () => {
+  const loadUsers = async () => {
     try {
-      const res = await api.get("/groups/users"); // reuse existing endpoint
-      const filtered = res.data.filter(u => u._id !== user.id);
-      setUsers(filtered);
+      const res = await api.get("/groups/users");
+      setUsers(res.data.filter((u) => !isSameUser(u._id, myId)));
     } catch (err) {
       console.error("Failed to load users", err);
     }
   };
 
-    const handleSubmit = async () => {
-        if (!selectedUser || !amount) {
-            alert("Please select user and enter amount");
-            return;
-        }
+  const handleSubmit = async (e) => {
+    e?.preventDefault();
+    if (!selectedUser || !amount || Number(amount) <= 0) {
+      setError("Please select a person and enter a valid amount");
+      return;
+    }
 
-        const payload = {
-  amount: Number(amount),
-  description
-};
+    setError("");
 
-const myId = user._id || user.id;
-
-if (type === "they_owe_me") {
-  // Ram took money from me
-  payload.from = selectedUser; // Ram took
-  payload.to = myId;           // I gave
-} else {
-  // I took money from Ram
-  payload.from = myId;         // I took
-  payload.to = selectedUser;   // Ram gave
-}
-
-        try {
-            await api.post("/debts", payload);
-            navigate("/dashboard");
-        } catch (err) {
-            console.error("Failed to add debt", err.response?.data);
-            alert(err.response?.data?.message || "Something went wrong");
-        }
+    const payload = {
+      amount: Number(amount),
+      description,
+      recordedAt: combineDateAndTime(date, time),
+      from: type === "they_owe_me" ? selectedUser : myId,
+      to: type === "they_owe_me" ? myId : selectedUser,
     };
 
-    return (
-        <div className="min-h-screen bg-gray-50 px-6 py-10">
-            <div className="max-w-xl mx-auto bg-white shadow rounded-xl p-6 space-y-6">
+    setSubmitting(true);
+    try {
+      await api.post("/debts", payload);
+      navigate("/debts");
+    } catch (err) {
+      console.error("Failed to add debt", err.response?.data);
+      setError(getApiErrorMessage(err, "Something went wrong"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-                <h2 className="text-2xl font-bold text-gray-800">
-                    Add Personal Debt
-                </h2>
-
-                {/* Select User */}
-                <div>
-                    <label className="block text-sm font-medium mb-2">
-                        Select Person
-                    </label>
-                    <select
-                        className="w-full border rounded-lg px-4 py-2"
-                        value={selectedUser}
-                        onChange={(e) => setSelectedUser(e.target.value)}
-                    >
-                        <option value="">-- Select --</option>
-                        {users.map((u) => (
-                            <option key={u._id} value={u._id}>
-                                {u.name} ({u.email})
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Type */}
-                <div>
-                    <label className="block text-sm font-medium mb-2">
-                        Type
-                    </label>
-                    <select
-                        className="w-full border rounded-lg px-4 py-2"
-                        value={type}
-                        onChange={(e) => setType(e.target.value)}
-                    >
-                        <option value="they_owe_me">
-                            They took money from me
-                        </option>
-                        <option value="i_owe_them">
-                            I took money from them
-                        </option>
-                    </select>
-                </div>
-
-                {/* Amount */}
-                <div>
-                    <label className="block text-sm font-medium mb-2">
-                        Amount
-                    </label>
-                    <input
-                        type="number"
-                        className="w-full border rounded-lg px-4 py-2"
-                        placeholder="Enter amount"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                    />
-                </div>
-
-                {/* Description */}
-                <div>
-                    <label className="block text-sm font-medium mb-2">
-                        Description
-                    </label>
-                    <input
-                        type="text"
-                        className="w-full border rounded-lg px-4 py-2"
-                        placeholder="Why this money?"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                    />
-                </div>
-
-                {/* Buttons */}
-                <div className="flex gap-4">
-                    <button
-                        type="button"
-                        onClick={handleSubmit}
-                        className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
-                    >
-                        Save
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => navigate("/dashboard")}
-                        className="flex-1 bg-gray-300 py-2 rounded-lg"
-                    >
-                        Cancel
-                    </button>
-                </div>
-            </div>
+  return (
+    <div className="page-container">
+      <div className="form-card card space-y-6">
+        <div>
+          <button type="button" onClick={() => navigate("/debts")} className="back-link">
+            ← Back to Debts
+          </button>
+          <h2 className="page-title text-xl sm:text-2xl">Add Personal Debt</h2>
+          <p className="page-subtitle">Record money lent to or borrowed from a friend</p>
         </div>
-    );
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {error && (
+            <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2">
+              {error}
+            </p>
+          )}
+
+          <div>
+            <label className="label">Who is involved?</label>
+            <PersonSelectList
+              users={users}
+              value={selectedUser}
+              onChange={setSelectedUser}
+              emptyMessage="No friends found — add people via groups first"
+            />
+          </div>
+
+          <div>
+            <label className="label">What happened?</label>
+            <div className="option-chips">
+              <button
+                type="button"
+                onClick={() => setType("they_owe_me")}
+                className={`option-chip ${type === "they_owe_me" ? "option-chip-active" : ""}`}
+              >
+                They borrowed from me
+              </button>
+              <button
+                type="button"
+                onClick={() => setType("i_owe_them")}
+                className={`option-chip ${type === "i_owe_them" ? "option-chip-active" : ""}`}
+              >
+                I borrowed from them
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="label">Amount</label>
+            <AmountInput
+              value={amount}
+              onChange={setAmount}
+              placeholder="Enter amount"
+            />
+          </div>
+
+          <DateTimeFields
+            date={date}
+            time={time}
+            onDateChange={setDate}
+            onTimeChange={setTime}
+            dateLabel="When did this happen?"
+            smartTimeOnDateChange
+            showTimezoneHint
+          />
+
+          <div>
+            <label className="label">Note (optional)</label>
+            <input
+              type="text"
+              className="input"
+              placeholder="e.g. Dinner, cab fare, emergency loan"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <SlowLoadHint active={submitting} compact />
+
+          <div className="flex flex-col gap-3 sm:flex-row pt-2">
+            <button type="submit" disabled={submitting} className="btn-success flex-1 w-full">
+              {submitting ? "Saving..." : "Save Debt"}
+            </button>
+            <button type="button" onClick={() => navigate("/debts")} className="btn-secondary flex-1 w-full">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }

@@ -1,277 +1,282 @@
-// import { useEffect, useState } from "react";
-// import { useParams, useNavigate } from "react-router-dom";
-// import api from "../api/api";
-
-// export default function DebtDetails() {
-//     const { userId } = useParams();
-//     const navigate = useNavigate();
-//     const currentUser = JSON.parse(localStorage.getItem("user"));
-
-//     const [history, setHistory] = useState([]);
-//     const [otherUser, setOtherUser] = useState(null);
-
-//     useEffect(() => {
-//         loadHistory();
-//     }, []);
-
-//     const loadHistory = async () => {
-//         const res = await api.get(`/debts/with/${userId}`);
-//         setHistory(res.data);
-
-//         if (res.data.length > 0) {
-//             const first = res.data[0];
-//             const other =
-//                 first.from._id === currentUser.id
-//                     ? first.to
-//                     : first.from;
-
-//             setOtherUser(other);
-//         }
-//     };
-
-//     // ✅ Calculate Net
-//     const calculateNet = () => {
-//         let total = 0;
-
-//         history.forEach((d) => {
-//             if (d.from._id === currentUser.id) {
-//                 total += d.amount; // I gave
-//             } else {
-//                 total -= d.amount; // I took
-//             }
-//         });
-
-//         return total;
-//     };
-
-//     const net = calculateNet();
-
-//     return (
-//         <div className="max-w-3xl mx-auto p-6 space-y-6">
-
-//             <button
-//                 onClick={() => navigate("/dashboard")}
-//                 className="text-blue-600 hover:underline"
-//             >
-//                 ← Back
-//             </button>
-
-//             {otherUser && (
-//                 <div className="bg-white rounded-xl shadow p-6">
-//                     <h2 className="text-xl font-bold mb-2">
-//                         {otherUser.name}
-//                     </h2>
-
-//                     <p className={`font-semibold ${net > 0 ? "text-green-600" : "text-red-600"
-//                         }`}>
-//                         {net > 0
-//                             ? `${otherUser.name} owes you ₹${net.toFixed(2)}`
-//                             : net < 0
-//                                 ? `You owe ${otherUser.name} ₹${Math.abs(net).toFixed(2)}`
-//                                 : "All settled"}
-//                     </p>
-//                 </div>
-//             )}
-
-//             <div className="space-y-4">
-//                 <h3 className="font-semibold">Transaction History</h3>
-
-//                 {history.length === 0 ? (
-//                     <div className="bg-white p-6 rounded-xl shadow text-center text-gray-500">
-//                         No transactions yet
-//                     </div>
-//                 ) : (
-//                     history.map((d) => (
-//                         <div
-//                             key={d._id}
-//                             className="bg-white rounded-xl shadow p-5 space-y-2"
-//                         >
-//                             <div className="flex justify-between">
-//                                 <p className="font-semibold">
-//                                     {d.description}
-//                                 </p>
-//                                 <p className="font-bold">
-//                                     ₹{Number(d.amount).toFixed(2)}
-//                                 </p>
-
-//                             </div>
-
-//                             <p className="text-sm text-gray-500">
-//                                 {d.from._id === currentUser.id
-//                                     ? `You gave money`
-//                                     : `You received money`}
-//                             </p>
-
-//                             <p className="text-xs text-gray-400">
-//                                 {new Date(d.createdAt).toLocaleString("en-IN", {
-//                                     dateStyle: "medium",
-//                                     timeStyle: "short"
-//                                 })}
-//                             </p>
-
-//                         </div>
-//                     ))
-//                 )}
-//             </div>
-//         </div>
-//     );
-// }
-
-
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/api";
+import { formatCurrency, formatDate } from "../utils/format";
+import {
+  calculateDebtNet,
+  canDeleteDebtEntry,
+  getDebtEntryMeta,
+  groupDebtsByDate,
+  isSameUser,
+  formatDebtTime,
+} from "../utils/debt";
+import BalanceFlowHero from "../components/BalanceFlowHero";
+import SettleDebtPanel from "../components/SettleDebtPanel";
+import PageLoader from "../components/ui/PageLoader";
+import { getStoredUserId } from "../utils/auth";
 
 export default function DebtDetails() {
-    const { userId } = useParams();
-    const navigate = useNavigate();
-    const currentUser = JSON.parse(localStorage.getItem("user"));
+  const { userId } = useParams();
+  const navigate = useNavigate();
+  const myId = getStoredUserId();
 
-    const [history, setHistory] = useState([]);
-    const [otherUser, setOtherUser] = useState(null);
+  useEffect(() => {
+    loadOtherUser();
+    loadHistory(true);
+  }, [userId]);
 
-    useEffect(() => {
-        loadHistory();
-    }, []);
+  const loadOtherUser = async () => {
+    try {
+      const res = await api.get("/groups/users");
+      const found = res.data.find((u) => isSameUser(u._id, userId));
+      if (found) {
+        setOtherUser(found);
+      }
+    } catch (err) {
+      console.error("Failed to load user profile", err);
+    }
+  };
 
-    const loadHistory = async () => {
-        const res = await api.get(`/debts/with/${userId}`);
-        setHistory(res.data);
+  const loadHistory = async (initial = false) => {
+    if (initial) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
 
-        if (res.data.length > 0) {
-            const myId = currentUser._id || currentUser.id;
-            const first = res.data[0];
+    try {
+      const res = await api.get(`/debts/with/${userId}`);
+      setHistory(res.data);
 
-            const other =
-                first.from._id === myId
-                    ? first.to
-                    : first.from;
+      if (res.data.length > 0) {
+        const first = res.data[0];
+        const other = isSameUser(first.from, myId) ? first.to : first.from;
+        setOtherUser(other);
+      }
+    } catch (err) {
+      console.error("Failed to load debt history", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
-            setOtherUser(other);
-        }
-    };
+  const net = calculateDebtNet(history, myId);
+  const dateGroups = groupDebtsByDate(history);
 
-    const calculateNet = () => {
-        let total = 0;
-        const myId = currentUser._id || currentUser.id;
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this transaction?")) return;
+    try {
+      await api.delete(`/debts/${id}`);
+      loadHistory();
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Failed to delete transaction");
+    }
+  };
 
-        history.forEach((d) => {
-            if (d.from._id === myId) {
-                // I took money → I owe
-                total -= d.amount;
-            } else {
-                // They took money → they owe me
-                total += d.amount;
-            }
-        });
+  const handleDeleteAll = async () => {
+    if (!window.confirm("Delete all records with this person? This cannot be undone.")) return;
+    try {
+      await api.delete(`/debts/all-with/${userId}`);
+      setHistory([]);
+      loadHistory();
+    } catch (err) {
+      console.error("Delete all error:", err);
+      alert("Failed to delete records");
+    }
+  };
 
-        return total;
-    };
+  const loanTotal = history
+    .filter((d) => d.type !== "settlement")
+    .reduce((sum, d) => {
+      if (isSameUser(d.to, myId)) return sum + Number(d.amount);
+      return sum - Number(d.amount);
+    }, 0);
 
-    const net = calculateNet();
+  const settledTotal = history
+    .filter((d) => d.type === "settlement")
+    .reduce((sum, d) => sum + Number(d.amount), 0);
 
-    const handleDelete = async (id) => {
-        console.log("Delete clicked:", id);
+  if (loading) {
+    return <PageLoader message="Loading history..." />;
+  }
 
-        try {
-            const res = await api.delete(`/debts/${id}`);
-            console.log("Delete response:", res.data);
-            loadHistory();
-        } catch (err) {
-            console.error("Delete error:", err.response?.status);
-            console.error("Delete error data:", err.response?.data);
-        }
-    };
+  return (
+    <div className="page-container space-y-6">
+      <button type="button" onClick={() => navigate("/debts")} className="back-link">
+        ← Back to Debts
+      </button>
 
-    const handleDeleteAll = async () => {
-        try {
-            const res = await api.delete(`/debts/all-with/${userId}`);
-            console.log("Delete all response:", res.data);
-            loadHistory();
-        } catch (err) {
-            console.error("Delete all error:", err.response?.status);
-            console.error("Delete all error data:", err.response?.data);
-        }
-    };
+      {otherUser ? (
+        <>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="app-avatar !w-12 !h-12 !text-lg">
+              {otherUser.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h1 className="page-title text-xl sm:text-2xl">{otherUser.name}</h1>
+              <p className="text-sm text-dim">{otherUser.email}</p>
+              {history.length > 0 && (
+                <p className="text-xs text-cyan-400/80 mt-0.5 font-medium">
+                  {history.length} total transaction{history.length !== 1 ? "s" : ""} on record
+                </p>
+              )}
+            </div>
+          </div>
 
-    return (
-        <div className="max-w-3xl mx-auto p-6 space-y-6">
+          <BalanceFlowHero otherName={otherUser.name} net={net} />
 
-            <button
-                type="button"
-                onClick={() => navigate("/dashboard")}
-                className="text-blue-600 hover:underline"
-            >
-                ← Back
+          <SettleDebtPanel
+            otherUserId={userId}
+            otherUserName={otherUser.name}
+            net={net}
+            onSettled={() => loadHistory()}
+          />
+
+          <p className="text-xs text-dim text-center -mt-2">
+            Shared ledger — either person can record a payment; both see the same balance instantly.
+          </p>
+        </>
+      ) : (
+        <div className="card !p-4 text-sm text-muted">Could not load contact details.</div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="metric-card" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
+          <p className="metric-label">Outstanding</p>
+          <p className="metric-value text-lg sm:text-xl">
+            {Math.abs(net) < 0.01 ? "Settled" : formatCurrency(Math.abs(net))}
+          </p>
+        </div>
+        <div className="metric-card" style={{ background: "linear-gradient(135deg, #10b981, #14b8a6)" }}>
+          <p className="metric-label">Net loan position</p>
+          <p className="metric-value text-lg sm:text-xl">
+            {formatCurrency(Math.abs(loanTotal))}
+          </p>
+        </div>
+        <div className="metric-card" style={{ background: "linear-gradient(135deg, #0891b2, #06b6d4)" }}>
+          <p className="metric-label">Payments recorded</p>
+          <p className="metric-value text-lg sm:text-xl">{formatCurrency(settledTotal)}</p>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="section-title flex items-center gap-2">
+            <span>📅</span> Day-by-day History
+            {refreshing && <span className="text-xs text-dim font-normal">Updating...</span>}
+          </h2>
+          {history.length > 0 && (
+            <button type="button" onClick={handleDeleteAll} className="btn-ghost !text-red-400 !text-xs">
+              Clear all
             </button>
+          )}
+        </div>
 
-            {otherUser && (
-                <div className="bg-white rounded-xl shadow p-6">
-                    <h2 className="text-xl font-bold mb-2">
-                        {otherUser.name}
-                    </h2>
+        {history.length === 0 ? (
+          <div className="empty-state !py-12">
+            <p className="text-4xl mb-3">📭</p>
+            <p className="text-muted font-semibold">No transactions yet</p>
+            <p className="text-sm text-dim mt-1">Debt records with this person will appear here</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {dateGroups.map(({ date, label, entries }) => {
+              const dayNet = entries.reduce((sum, d) => {
+                const meta = getDebtEntryMeta(d, myId);
+                const amt = Number(d.amount);
+                if (meta.direction === "in" || meta.direction === "loan-out") {
+                  return sum + amt;
+                }
+                return sum - amt;
+              }, 0);
 
-                    <p className={`font-semibold ${net > 0 ? "text-green-600" : "text-red-600"}`}>
-                        {net > 0
-                            ? `${otherUser.name} owes you ₹${net.toFixed(2)}`
-                            : net < 0
-                                ? `You owe ${otherUser.name} ₹${Math.abs(net).toFixed(2)}`
-                                : "All settled"}
+              return (
+                <div key={date}>
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/8">
+                    <p className="text-sm font-bold text-cyan-400/90">{label || formatDate(date)}</p>
+                    <p className="text-xs text-dim">
+                      {entries.length} transaction{entries.length !== 1 ? "s" : ""}
                     </p>
+                  </div>
 
-                    <button
-                        type="button"
-                        onClick={handleDeleteAll}
-                        className="mt-3 text-sm text-red-600 hover:underline"
-                    >
-                        Delete All Records
-                    </button>
-                </div>
-            )}
+                  <div className="space-y-3">
+                    {entries.map((d) => {
+                      const meta = getDebtEntryMeta(d, myId);
+                      const isSettlement = d.type === "settlement";
 
-            <div className="space-y-4">
-                <h3 className="font-semibold">Transaction History</h3>
-
-                {history.length === 0 ? (
-                    <div className="bg-white p-6 rounded-xl shadow text-center text-gray-500">
-                        No transactions yet
-                    </div>
-                ) : (
-                    history.map((d) => (
+                      return (
                         <div
-                            key={d._id}
-                            className="bg-white rounded-xl shadow p-5 space-y-2"
+                          key={d._id}
+                          className={`history-entry ${
+                            isSettlement ? "history-entry-settlement" : ""
+                          }`}
                         >
-                            <div className="flex justify-between">
-                                <p className="font-semibold">{d.description}</p>
-                                <p className="font-bold">₹{Number(d.amount).toFixed(2)}</p>
+                          <div className="flex justify-between items-start gap-3 history-entry-row">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-semibold text-slate-200">
+                                  {d.description || "Personal debt"}
+                                </p>
+                                {isSettlement && (
+                                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
+                                    Settlement
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted mt-1">{meta.label}</p>
+                              {isSettlement && d.settledBy?.name && (
+                                <p className="text-xs text-cyan-400/70 mt-0.5">
+                                  Recorded by {d.settledBy.name}
+                                </p>
+                              )}
+                              <p className="text-xs text-dim mt-1">
+                                {formatDebtTime(d.recordedAt || d.createdAt)}
+                              </p>
                             </div>
-
-                            <p className="text-sm text-gray-500">
-                                {(d.from._id === (currentUser._id || currentUser.id))
-                                    ? `You received money`
-                                    : `You gave money`}
-                            </p>
-
-                            <p className="text-xs text-gray-400">
-                                {new Date(d.createdAt).toLocaleString("en-IN", {
-                                    dateStyle: "medium",
-                                    timeStyle: "short"
-                                })}
-                            </p>
-
-                            <button
+                            <div className="text-right shrink-0">
+                              <p className={`font-bold text-lg ${meta.colorClass}`}>
+                                {meta.sign}
+                                {formatCurrency(d.amount)}
+                              </p>
+                              <button
                                 type="button"
                                 onClick={() => handleDelete(d._id)}
-                                className="text-xs text-red-600 hover:underline"
-                            >
+                                disabled={!canDeleteDebtEntry(d, myId)}
+                                className={`text-xs font-semibold mt-2 transition ${
+                                  canDeleteDebtEntry(d, myId)
+                                    ? "text-red-400/80 hover:text-red-400"
+                                    : "text-dim cursor-not-allowed"
+                                }`}
+                                title={
+                                  isSettlement && !canDeleteDebtEntry(d, myId)
+                                    ? "Only the person who recorded this settlement can delete it"
+                                    : "Delete transaction"
+                                }
+                              >
                                 Delete
-                            </button>
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                    ))
-                )}
-            </div>
-        </div>
-    );
+                      );
+                    })}
+                  </div>
+
+                  <p className="text-xs text-dim mt-2 text-right">
+                    Day movement:{" "}
+                    <span className={dayNet >= 0 ? "text-emerald-400" : "text-red-400"}>
+                      {dayNet >= 0 ? "+" : "−"}
+                      {formatCurrency(Math.abs(dayNet))}
+                    </span>
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

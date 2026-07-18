@@ -125,6 +125,8 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 /* ================= REGISTER ================= */
 exports.register = async (req, res) => {
   try {
@@ -134,20 +136,30 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const existingUser = await User.findOne({ email });
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      return res.status(400).json({ message: "Enter a valid email address" });
+    }
+
+    if (String(password).length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
+    }
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "Unable to register with these details" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await User.create({
-      name,
-      email,
-      password: hashedPassword
+      name: String(name).trim(),
+      email: normalizedEmail,
+      password: hashedPassword,
     });
 
-    res.json({ message: "Registered successfully" });
+    res.status(201).json({ message: "Registered successfully" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Registration failed" });
@@ -159,25 +171,21 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log("Password match:", isMatch);
 
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
     let token;
     try {
-      token = jwt.sign(
-        { id: user._id },
-        process.env.JWT_SECRET || "splitwise_secret",
-        { expiresIn: "7d" }
-      );
+      token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
     } catch (jwtErr) {
       console.error("JWT ERROR:", jwtErr);
       return res.status(500).json({ message: "Token generation failed" });

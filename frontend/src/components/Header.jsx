@@ -9,7 +9,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
         {/* LOGO */}
         <h1
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/groups")}
           className="text-2xl font-bold text-blue-600 cursor-pointer"
         >
           Splitwise 💸

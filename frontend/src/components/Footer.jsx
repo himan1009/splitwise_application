@@ -1,7 +1,7 @@
 import api from "../api/api";
 import { useNavigate } from "react-router-dom";
 
-export default function Footer() {
+export default function Footer({ setIsAuthenticated }) {
   const navigate = useNavigate();
 
   const deleteAccount = async () => {
@@ -12,11 +12,8 @@ export default function Footer() {
 
     try {
       await api.delete("/auth/delete-account");
-
-      // clear local storage
       localStorage.clear();
-
-      // redirect to login
+      if (setIsAuthenticated) setIsAuthenticated(false);
       navigate("/login", { replace: true });
     } catch (err) {
       alert("Failed to delete account. Please try again.");
@@ -25,15 +22,14 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-gray-100 border-t mt-10">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-        <p className="text-sm text-gray-500">
-          © {new Date().getFullYear()} Splitwise Clone
+    <footer className="app-footer mt-auto">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
+        <p className="text-xs text-slate-500 font-medium">
+          © {new Date().getFullYear()} FinTrack
         </p>
-
         <button
           onClick={deleteAccount}
-          className="text-sm text-red-600 hover:underline"
+          className="text-xs text-slate-500 hover:text-red-400 font-medium transition"
         >
           Delete Account
         </button>

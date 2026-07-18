@@ -209,8 +209,15 @@ router.get("/:groupId/available-users", auth, async (req, res) => {
       return res.status(404).json({ message: "Group not found" });
     }
 
+    const isMember = group.members.some(
+      (m) => m.toString() === req.user._id.toString()
+    );
+    if (!isMember) {
+      return res.status(403).json({ message: "Not authorized for this group" });
+    }
+
     const users = await User.find({
-      _id: { $nin: group.members }   // ✅ Mongo handles ObjectId correctly
+      _id: { $nin: group.members },
     }).select("_id name email");
 
     res.json(users);
@@ -227,17 +234,38 @@ router.post("/:groupId/add-member", auth, async (req, res) => {
   try {
     const { userId } = req.body;
 
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required" });
+    }
+
     const group = await Group.findById(req.params.groupId);
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
     }
 
-    if (group.members.includes(userId)) {
+    const isMember = group.members.some(
+      (m) => m.toString() === req.user._id.toString()
+    );
+    if (!isMember) {
+      return res.status(403).json({ message: "Only group members can add people" });
+    }
+
+    const alreadyInGroup = group.members.some(
+      (m) => m.toString() === userId.toString()
+    );
+    if (alreadyInGroup) {
       return res.status(400).json({ message: "User already in group" });
     }
 
-    group.members.push(userId);
-    await group.save();
+    const userExists = await User.exists({ _id: userId });
+    if (!userExists) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    await Group.updateOne(
+      { _id: group._id },
+      { $addToSet: { members: userId } }
+    );
 
     res.json({ message: "Member added successfully" });
   } catch (err) {
