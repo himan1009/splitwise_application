@@ -130,6 +130,7 @@
 const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/auth");
+const mongoose = require("mongoose");
 const Group = require("../models/Group");
 const User = require("../models/User");
 const Expense = require("../models/Expense");
@@ -157,19 +158,28 @@ router.post("/", auth, async (req, res) => {
   try {
     const { name, memberIds = [] } = req.body;
 
-    if (!name) {
+    if (!name?.trim()) {
       return res.status(400).json({ message: "Group name required" });
     }
 
-    // creator is always included
-    const members = [
-      ...new Set([req.user._id.toString(), ...memberIds])
-    ];
+    const validMemberIds = [];
+    for (const id of memberIds) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid member ID" });
+      }
+      const exists = await User.exists({ _id: id });
+      if (!exists) {
+        return res.status(400).json({ message: "One or more members do not exist" });
+      }
+      validMemberIds.push(id.toString());
+    }
+
+    const members = [...new Set([req.user._id.toString(), ...validMemberIds])];
 
     const group = await Group.create({
-      name,
+      name: name.trim(),
       createdBy: req.user._id,
-      members
+      members,
     });
 
     res.json(group);

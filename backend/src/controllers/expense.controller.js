@@ -92,6 +92,13 @@ exports.settleGroup = async (req, res) => {
       return res.status(400).json({ message: "groupId and otherUserId are required" });
     }
 
+    if (
+      !mongoose.Types.ObjectId.isValid(groupId) ||
+      !mongoose.Types.ObjectId.isValid(otherUserId)
+    ) {
+      return res.status(400).json({ message: "Invalid group or user ID" });
+    }
+
     const group = await assertGroupMember(groupId, myId);
     if (!group) {
       return res.status(403).json({ message: "Not authorized for this group" });
@@ -145,6 +152,9 @@ exports.settleGroup = async (req, res) => {
         : `Group settlement — paid ₹${settleAmount} (partial)`);
 
     const parsedRecordedAt = parseRecordedAt(recordedAt);
+    if (recordedAt && !parsedRecordedAt) {
+      return res.status(400).json({ message: "Invalid recordedAt date" });
+    }
 
     const expense = await Expense.create({
       groupId,

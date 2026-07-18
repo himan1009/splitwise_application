@@ -11,11 +11,14 @@ export default function DaySummaryModal({ open, onClose, date, onUpdate, onEdit 
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (open && date) loadDay();
+    if (!open || !date) return;
+    setDetail(null);
+    loadDay();
   }, [open, date]);
 
   const loadDay = async () => {
     setLoading(true);
+    setDetail(null);
     try {
       const res = await api.get(`/personal/summary/day?date=${date}`);
       setDetail(res.data);

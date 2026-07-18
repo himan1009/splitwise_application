@@ -20,7 +20,16 @@ export default function DebtDetails() {
   const navigate = useNavigate();
   const myId = getStoredUserId();
 
+  const [history, setHistory] = useState([]);
+  const [otherUser, setOtherUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState("");
+
   useEffect(() => {
+    setHistory([]);
+    setOtherUser(null);
+    setLoadError("");
     loadOtherUser();
     loadHistory(true);
   }, [userId]);
@@ -47,6 +56,7 @@ export default function DebtDetails() {
     try {
       const res = await api.get(`/debts/with/${userId}`);
       setHistory(res.data);
+      setLoadError("");
 
       if (res.data.length > 0) {
         const first = res.data[0];
@@ -55,6 +65,8 @@ export default function DebtDetails() {
       }
     } catch (err) {
       console.error("Failed to load debt history", err);
+      setHistory([]);
+      setLoadError("Could not load debt history. Please try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -107,6 +119,12 @@ export default function DebtDetails() {
       <button type="button" onClick={() => navigate("/debts")} className="back-link">
         ← Back to Debts
       </button>
+
+      {loadError && (
+        <div className="card !p-4 border border-red-500/25 bg-red-500/10 text-red-300 text-sm">
+          {loadError}
+        </div>
+      )}
 
       {otherUser ? (
         <>

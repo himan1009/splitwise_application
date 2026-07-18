@@ -7,9 +7,12 @@ import PageLoader from "../components/ui/PageLoader";
 import { isSameUser, summarizeDebtsByPerson, getRecentDebtsByDate, formatDebtTime } from "../utils/debt";
 import { getStoredUserId } from "../utils/auth";
 
+import { getApiErrorMessage } from "../utils/apiErrors";
+
 export default function Debts() {
   const [debts, setDebts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const navigate = useNavigate();
   const myId = getStoredUserId();
 
@@ -19,11 +22,14 @@ export default function Debts() {
 
   const loadDebts = async () => {
     setLoading(true);
+    setLoadError("");
     try {
       const res = await api.get("/debts");
       setDebts(res.data);
     } catch (err) {
       console.error("Failed to load debts", err);
+      setDebts([]);
+      setLoadError(getApiErrorMessage(err, "Could not load debts. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -57,6 +63,15 @@ export default function Debts() {
           + Add Debt
         </button>
       </div>
+
+      {loadError && (
+        <div className="card !p-4 border border-red-500/25 bg-red-500/10 text-red-300 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button type="button" onClick={loadDebts} className="btn-ghost !text-red-300 shrink-0">
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className="detail-hero detail-hero-indigo">
         <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -131,7 +146,7 @@ export default function Debts() {
         </div>
       )}
 
-      {personalSummary.length === 0 && (
+      {personalSummary.length === 0 && !loadError && (
         <div className="card">
           <div className="text-center py-10">
             <p className="text-4xl mb-3">🤝</p>

@@ -55,6 +55,10 @@ export default function MonthlyTracker() {
       setPrevSummary(prevSummaryRes.data);
     } catch (err) {
       console.error("Failed to load tracker data", err);
+      setSummary(null);
+      setDailyData([]);
+      setEntries([]);
+      setPrevSummary(null);
       setLoadError(getApiErrorMessage(err, "Could not load tracker data. Please try again."));
     } finally {
       setLoading(false);
@@ -284,13 +288,20 @@ export default function MonthlyTracker() {
                     )}
                   </div>
                   <span
-                    role="button"
-                    tabIndex={-1}
+                    className="cal-day-add"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleAddForDay(dateStr);
                     }}
-                    className="cal-day-add"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleAddForDay(dateStr);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
                     aria-label={`Add entry for day ${dayNum}`}
                   >
                     +

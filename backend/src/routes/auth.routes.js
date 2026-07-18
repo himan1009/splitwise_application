@@ -1,48 +1,3 @@
-// const router = require("express").Router();
-// const c = require("../controllers/auth.controller");
-
-// router.post("/register", c.register);
-// router.post("/login", c.login);
-
-// module.exports = router;
-
-
-
-// const router = require("express").Router();
-// const auth = require("../middleware/auth");
-// const c = require("../controllers/auth.controller");
-
-// router.post("/register", c.register);
-// router.post("/login", c.login);
-// router.get("/users", auth, c.getUsers);
-// router.delete("/delete-account", auth, c.deleteAccount);
-
-// module.exports = router;
-
-
-// const express = require("express");
-// const router = express.Router();
-// const authController = require("../controllers/auth.controller");
-// const auth = require("../middleware/auth");
-
-// /* PUBLIC */
-// router.post("/register", authController.register);
-// router.post("/login", authController.login);
-
-// /* PROTECTED */
-// router.delete("/delete-account", auth, async (req, res) => {
-//   try {
-//     await req.user.deleteOne();
-//     res.json({ message: "Account deleted successfully" });
-//   } catch (err) {
-//     res.status(500).json({ message: "Failed to delete account" });
-//   }
-// });
-
-// module.exports = router;
-
-
-
 const express = require("express");
 const router = express.Router();
 
@@ -65,11 +20,29 @@ router.delete("/delete-account", auth, async (req, res) => {
     await Debt.deleteMany({
       $or: [{ from: userId }, { to: userId }],
     });
-    await Expense.deleteMany({
-      $or: [{ paidBy: userId }, { "splits.user": userId }],
-    });
-    await Group.updateMany({ members: userId }, { $pull: { members: userId } });
-    await Group.deleteMany({ createdBy: userId, members: { $size: 0 } });
+
+    const ownedGroups = await Group.find({ createdBy: userId });
+    for (const group of ownedGroups) {
+      const remaining = group.members.filter(
+        (memberId) => memberId.toString() !== userId.toString()
+      );
+
+      if (remaining.length === 0) {
+        await Expense.deleteMany({ groupId: group._id });
+        await Group.deleteOne({ _id: group._id });
+      } else {
+        await Group.updateOne(
+          { _id: group._id },
+          { createdBy: remaining[0], $pull: { members: userId } }
+        );
+      }
+    }
+
+    await Group.updateMany(
+      { members: userId, createdBy: { $ne: userId } },
+      { $pull: { members: userId } }
+    );
+
     await req.user.deleteOne();
 
     res.json({ message: "Account deleted successfully" });

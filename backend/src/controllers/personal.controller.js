@@ -1,5 +1,13 @@
 const PersonalEntry = require("../models/PersonalEntry");
 
+const parsePositiveAmount = (value) => {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return null;
+  }
+  return parseFloat(amount.toFixed(2));
+};
+
 const EXPENSE_CATEGORIES = [
   "food",
   "transport",
@@ -88,6 +96,11 @@ const createEntry = async (req, res) => {
       return res.status(400).json({ message: "Amount must be greater than 0" });
     }
 
+    const parsedAmount = parsePositiveAmount(amount);
+    if (parsedAmount === null) {
+      return res.status(400).json({ message: "Amount must be greater than 0" });
+    }
+
     if (!date) {
       return res.status(400).json({ message: "Date is required" });
     }
@@ -106,7 +119,7 @@ const createEntry = async (req, res) => {
     const entry = await PersonalEntry.create({
       userId: req.user._id,
       type,
-      amount: Number(amount),
+      amount: parsedAmount,
       date: parsedDate,
       category,
       message: message || "",
@@ -169,10 +182,11 @@ const updateEntry = async (req, res) => {
     }
 
     if (amount !== undefined) {
-      if (Number(amount) <= 0) {
+      const parsedAmount = parsePositiveAmount(amount);
+      if (parsedAmount === null) {
         return res.status(400).json({ message: "Amount must be greater than 0" });
       }
-      entry.amount = Number(amount);
+      entry.amount = parsedAmount;
     }
 
     if (date !== undefined) {

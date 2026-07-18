@@ -9,6 +9,7 @@ import PageLoader from "../components/ui/PageLoader";
 import { formatCurrency, formatDateTime } from "../utils/format";
 import { isSameUser, normalizeId } from "../utils/debt";
 import { getStoredUser, getStoredUserId } from "../utils/auth";
+import { getApiErrorMessage } from "../utils/apiErrors";
 
 function filterExpensesForUser(expenses, myId) {
   const me = normalizeId(myId);
@@ -87,6 +88,7 @@ export default function GroupDetails() {
   const [editingExpense, setEditingExpense] = useState(null);
   const [settlingWith, setSettlingWith] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [addingMembers, setAddingMembers] = useState(false);
 
   useEffect(() => {
@@ -95,6 +97,7 @@ export default function GroupDetails() {
 
   const loadAll = async () => {
     setLoading(true);
+    setLoadError("");
     try {
       const groupsRes = await api.get("/groups");
       const g = groupsRes.data.find((x) => x._id === groupId);
@@ -110,6 +113,9 @@ export default function GroupDetails() {
       }
     } catch (err) {
       console.error("Failed to load group", err);
+      setGroup(null);
+      setExpenses([]);
+      setLoadError(getApiErrorMessage(err, "Could not load this group. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -152,10 +158,15 @@ export default function GroupDetails() {
     return (
       <div className="page-container">
         <div className="empty-state">
-          <p className="text-4xl mb-3">🔍</p>
-          <p className="text-muted font-semibold">Group not found</p>
-          <button type="button" onClick={() => navigate("/groups")} className="btn-primary mt-6">
-            Back to Groups
+          <p className="text-4xl mb-3">{loadError ? "⚠️" : "🔍"}</p>
+          <p className="text-muted font-semibold">
+            {loadError ? "Could not load group" : "Group not found"}
+          </p>
+          {loadError && (
+            <p className="text-sm text-dim mt-2 max-w-sm mx-auto">{loadError}</p>
+          )}
+          <button type="button" onClick={() => (loadError ? loadAll() : navigate("/groups"))} className="btn-primary mt-6">
+            {loadError ? "Retry" : "Back to Groups"}
           </button>
         </div>
       </div>

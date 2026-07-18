@@ -132,18 +132,19 @@ router.post("/", auth, async (req, res) => {
 const calculateNet = (records, myId) => {
   let net = 0;
   const me = myId.toString();
+  const idOf = (value) => (value?._id ?? value)?.toString();
 
   records.forEach((d) => {
     const amt = Number(d.amount);
     const isSettlement = d.type === "settlement";
 
     if (isSettlement) {
-      if (d.to.toString() === me) {
+      if (idOf(d.to) === me) {
         net -= amt;
       } else {
         net += amt;
       }
-    } else if (d.from.toString() === me) {
+    } else if (idOf(d.from) === me) {
       net -= amt;
     } else {
       net += amt;
@@ -205,9 +206,12 @@ const buildSettlement = ({ otherUserId, myId, amount, full, date, recordedAt, no
   let recordedAtDate = new Date();
   if (recordedAt) {
     const parsedRecordedAt = new Date(recordedAt);
-    if (!Number.isNaN(parsedRecordedAt.getTime())) {
-      recordedAtDate = parsedRecordedAt;
+    if (Number.isNaN(parsedRecordedAt.getTime())) {
+      const err = new Error("Invalid recordedAt date");
+      err.status = 400;
+      throw err;
     }
+    recordedAtDate = parsedRecordedAt;
   } else if (date) {
     const parsed = new Date(date);
     if (!Number.isNaN(parsed.getTime())) {
@@ -330,6 +334,10 @@ router.delete("/all-with/:userId", auth, async (req, res) => {
   try {
     const myId = req.user._id;
     const otherId = req.params.userId;
+
+    if (!mongoose.Types.ObjectId.isValid(otherId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
 
     await Debt.deleteMany({
       $or: [

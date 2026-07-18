@@ -31,31 +31,38 @@ export default function AddEntryModal({ open, onClose, onSuccess, defaultDate, e
     let cancelled = false;
     setError("");
 
-    api.get("/personal/categories").then((res) => {
-      if (cancelled) return;
+    api
+      .get("/personal/categories")
+      .then((res) => {
+        if (cancelled) return;
 
-      setCategories(res.data);
+        setCategories(res.data);
 
-      if (entry) {
-        const parts = splitDateTime(entry.date);
-        setType(entry.type);
-        setAmount(String(entry.amount));
-        setDate(parts.date);
-        setTime(parts.time);
-        setCategory(entry.category);
-        setMessage(entry.message || "");
-      } else {
-        const parts = defaultDate
-          ? splitDateTime(`${defaultDate}T12:00:00`)
-          : { date: getNowDateString(), time: getNowTimeString() };
-        setType("expense");
-        setAmount("");
-        setMessage("");
-        setDate(parts.date);
-        setTime(parts.time);
-        setCategory(res.data.expense[0] || "");
-      }
-    });
+        if (entry) {
+          const parts = splitDateTime(entry.date);
+          setType(entry.type);
+          setAmount(String(entry.amount));
+          setDate(parts.date);
+          setTime(parts.time);
+          setCategory(entry.category);
+          setMessage(entry.message || "");
+        } else {
+          const parts = defaultDate
+            ? splitDateTime(`${defaultDate}T12:00:00`)
+            : { date: getNowDateString(), time: getNowTimeString() };
+          setType("expense");
+          setAmount("");
+          setMessage("");
+          setDate(parts.date);
+          setTime(parts.time);
+          setCategory(res.data.expense[0] || "");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setError("Could not load categories. Please try again.");
+        }
+      });
 
     return () => {
       cancelled = true;

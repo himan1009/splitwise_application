@@ -1,8 +1,9 @@
 import { useState } from "react";
 import api from "../api/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import SlowLoadHint from "../components/ui/SlowLoadHint";
 import { getApiErrorMessage } from "../utils/apiErrors";
+import { getSafeReturnPath } from "../utils/auth";
 
 export default function Login({ setIsAuthenticated }) {
   const [email, setEmail] = useState("");
@@ -11,6 +12,7 @@ export default function Login({ setIsAuthenticated }) {
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -26,7 +28,8 @@ export default function Login({ setIsAuthenticated }) {
       localStorage.setItem("user", JSON.stringify(user));
 
       setIsAuthenticated(true);
-      navigate("/tracker", { replace: true });
+      const returnTo = getSafeReturnPath(searchParams.get("returnTo"));
+      navigate(returnTo, { replace: true });
     } catch (err) {
       setError(getApiErrorMessage(err, "Login failed"));
     } finally {

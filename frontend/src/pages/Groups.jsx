@@ -3,9 +3,12 @@ import api from "../api/api";
 import { useNavigate } from "react-router-dom";
 import PageLoader from "../components/ui/PageLoader";
 
+import { getApiErrorMessage } from "../utils/apiErrors";
+
 export default function Groups() {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,11 +17,14 @@ export default function Groups() {
 
   const loadGroups = async () => {
     setLoading(true);
+    setLoadError("");
     try {
       const res = await api.get("/groups");
       setGroups(res.data);
     } catch (err) {
       console.error("Failed to load groups", err);
+      setGroups([]);
+      setLoadError(getApiErrorMessage(err, "Could not load groups. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -60,7 +66,16 @@ export default function Groups() {
         </div>
       </div>
 
-      {groups.length === 0 ? (
+      {loadError && (
+        <div className="card !p-4 border border-red-500/25 bg-red-500/10 text-red-300 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button type="button" onClick={loadGroups} className="btn-ghost !text-red-300 shrink-0">
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!loadError && groups.length === 0 ? (
         <div className="empty-state">
           <p className="text-5xl mb-3">✈️</p>
           <p className="text-slate-300 font-semibold">No groups yet</p>

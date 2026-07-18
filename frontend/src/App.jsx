@@ -12,6 +12,8 @@ import GroupDetails from "./pages/GroupDetails";
 import AppLayout from "./layout/AppLayout";
 import AddDebt from "./pages/AddDebt";
 import DebtDetails from "./pages/DebtDetails";
+import NotFoundRedirect from "./pages/NotFoundRedirect";
+import GuestRoute, { ProtectedRoute, RootRedirect } from "./components/AuthRoute";
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(hasStoredSession());
@@ -20,21 +22,27 @@ export default function App() {
     <Routes>
       <Route
         path="/login"
-        element={<Login setIsAuthenticated={setIsAuthenticated} />}
+        element={
+          <GuestRoute>
+            <Login setIsAuthenticated={setIsAuthenticated} />
+          </GuestRoute>
+        }
       />
-      <Route path="/register" element={<Register />} />
       <Route
-        path="/"
-        element={<Navigate to={isAuthenticated ? "/tracker" : "/login"} replace />}
+        path="/register"
+        element={
+          <GuestRoute>
+            <Register />
+          </GuestRoute>
+        }
       />
+      <Route path="/" element={<RootRedirect isAuthenticated={isAuthenticated} />} />
 
       <Route
         element={
-          isAuthenticated ? (
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
             <AppLayout setIsAuthenticated={setIsAuthenticated} />
-          ) : (
-            <Navigate to="/login" replace />
-          )
+          </ProtectedRoute>
         }
       >
         <Route path="/tracker" element={<MonthlyTracker />} />
@@ -47,10 +55,7 @@ export default function App() {
         <Route path="/debt/:userId" element={<DebtDetails />} />
       </Route>
 
-      <Route
-        path="*"
-        element={<Navigate to={isAuthenticated ? "/tracker" : "/login"} replace />}
-      />
+      <Route path="*" element={<NotFoundRedirect />} />
     </Routes>
   );
 }

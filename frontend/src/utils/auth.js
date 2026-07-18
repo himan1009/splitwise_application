@@ -21,3 +21,10 @@ export function clearSession() {
 export function hasStoredSession() {
   return Boolean(localStorage.getItem("token") && getStoredUser());
 }
+
+export function getSafeReturnPath(path) {
+  if (!path || typeof path !== "string") return "/tracker";
+  if (!path.startsWith("/") || path.startsWith("//")) return "/tracker";
+  if (path.startsWith("/login") || path.startsWith("/register")) return "/tracker";
+  return path;
+}

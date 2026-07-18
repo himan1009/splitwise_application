@@ -12,7 +12,7 @@ import {
 import { normalizeId } from "../utils/debt";
 
 function inferSplitState(expense, members) {
-  const splitIds = expense.splits.map((s) => s.user._id);
+  const splitIds = expense.splits.map((s) => normalizeId(s.user));
   const amounts = expense.splits.map((s) => Number(s.amount));
   const total = Number(expense.amount);
   const rounded = amounts.map((a) => Math.round(a * 100) / 100);
@@ -38,7 +38,7 @@ function inferSplitState(expense, members) {
   if (Math.abs(percentSum - 100) < 0.5) {
     const values = {};
     expense.splits.forEach((s) => {
-      values[s.user._id] = String(
+      values[normalizeId(s.user)] = String(
         total > 0 ? Math.round((Number(s.amount) / total) * 10000) / 100 : 0
       );
     });
@@ -51,7 +51,7 @@ function inferSplitState(expense, members) {
 
   const values = {};
   expense.splits.forEach((s) => {
-    values[s.user._id] = String(s.amount);
+    values[normalizeId(s.user)] = String(s.amount);
   });
 
   return {
@@ -73,6 +73,31 @@ function buildEqualSplits(amount, selected) {
     const share = Math.round((Number(amount) / selected.length) * 100) / 100;
     allocated += share;
     return { user: id, amount: share };
+  });
+}
+
+function buildPercentSplits(amount, members, values) {
+  const total = Number(amount);
+  const active = members.filter((m) => Number(values[m._id] || 0) > 0);
+  let allocated = 0;
+
+  return members.map((m) => {
+    const pct = Number(values[m._id] || 0);
+    if (pct <= 0) {
+      return { user: m._id, amount: 0 };
+    }
+
+    const isLast = active[active.length - 1]._id === m._id;
+    if (isLast) {
+      return {
+        user: m._id,
+        amount: Math.round((total - allocated) * 100) / 100,
+      };
+    }
+
+    const share = Math.round(((pct * total) / 100) * 100) / 100;
+    allocated += share;
+    return { user: m._id, amount: share };
   });
 }
 
@@ -137,10 +162,7 @@ export default function AddExpense({ group, onAdd, editingExpense, onCancelEdit 
       }));
     }
 
-    return group.members.map((m) => ({
-      user: m._id,
-      amount: (Number(values[m._id] || 0) * Number(amount)) / 100,
-    }));
+    return buildPercentSplits(amount, group.members, values);
   };
 
   const validateSplits = (splits, totalAmount) => {
