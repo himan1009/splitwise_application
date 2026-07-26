@@ -190,27 +190,27 @@ export default function Debts() {
                         className="history-entry cursor-pointer"
                       >
                         <div className="flex justify-between items-start gap-3 history-entry-row">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-xs font-bold text-cyan-400/80 tabular-nums">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start gap-2 flex-wrap">
+                              <span className="text-xs font-bold text-cyan-400/80 tabular-nums shrink-0">
                                 {formatDebtTime(when)}
                               </span>
-                              <p className="font-semibold text-slate-200 truncate">
+                              <p className="history-entry-title break-words">
                                 {d.description || "Personal debt"}
                               </p>
                               {isSettlement && (
-                                <span className="text-xs text-cyan-400">(settlement)</span>
+                                <span className="text-xs text-cyan-400 shrink-0">(settlement)</span>
                               )}
                             </div>
-                            <p className="text-sm text-muted mt-0.5">
+                            <p className="text-sm text-muted mt-0.5 break-words">
                               with {other.name} ·{" "}
                               {isSettlement
                                 ? iReceived
-                                  ? d.settledBy?.name
-                                    ? `payment received · recorded by ${d.settledBy.name}`
+                                  ? d.recordedBy?.name || d.settledBy?.name
+                                    ? `payment received · recorded by ${(d.recordedBy || d.settledBy)?.name}`
                                     : "payment received"
-                                  : d.settledBy?.name
-                                  ? `payment sent · recorded by ${d.settledBy.name}`
+                                  : d.recordedBy?.name || d.settledBy?.name
+                                  ? `payment sent · recorded by ${(d.recordedBy || d.settledBy)?.name}`
                                   : "payment sent"
                                 : iReceived
                                 ? "you lent"

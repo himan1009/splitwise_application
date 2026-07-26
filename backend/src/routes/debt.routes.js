@@ -64,6 +64,44 @@ const auth = require("../middleware/auth");
 const Debt = require("../models/Debt");
 const mongoose = require("mongoose");
 
+function getRecorderId(debt) {
+  if (!debt) return null;
+  return debt.recordedBy || debt.settledBy || null;
+}
+
+function assertCanModifyDebt(req, debt) {
+  const recorder = getRecorderId(debt);
+  if (!recorder) {
+    const err = new Error("This entry cannot be modified");
+    err.status = 403;
+    throw err;
+  }
+  const recorderId = recorder._id ? recorder._id.toString() : recorder.toString();
+  if (recorderId !== req.user._id.toString()) {
+    const err = new Error("Only the person who recorded this entry can modify it");
+    err.status = 403;
+    throw err;
+  }
+}
+
+function assertParticipant(req, debt) {
+  if (
+    debt.from.toString() !== req.user._id.toString() &&
+    debt.to.toString() !== req.user._id.toString()
+  ) {
+    const err = new Error("Not authorized");
+    err.status = 403;
+    throw err;
+  }
+}
+
+const populateDebt = (query) =>
+  query
+    .populate("from", "name email")
+    .populate("to", "name email")
+    .populate("settledBy", "name email")
+    .populate("recordedBy", "name email");
+
 /* ================= ADD DEBT ================= */
 router.post("/", auth, async (req, res) => {
   try {
@@ -113,13 +151,11 @@ router.post("/", auth, async (req, res) => {
       amount: parseFloat(amt.toFixed(2)),
       description: description || "No description",
       type: "loan",
+      recordedBy: req.user._id,
       recordedAt: recordedAtDate,
     });
 
-    const populated = await Debt.findById(debt._id)
-      .populate("from", "name email")
-      .populate("to", "name email")
-      .populate("settledBy", "name email");
+    const populated = await populateDebt(Debt.findById(debt._id));
 
     res.status(201).json(populated);
 
@@ -227,6 +263,7 @@ const buildSettlement = ({ otherUserId, myId, amount, full, date, recordedAt, no
     description,
     type: "settlement",
     settledBy: myId,
+    recordedBy: myId,
     recordedAt: recordedAtDate,
   };
 };
@@ -265,10 +302,7 @@ router.post("/settle", auth, async (req, res) => {
 
     const debt = await Debt.create(settlement);
 
-    const populated = await Debt.findById(debt._id)
-      .populate("from", "name email")
-      .populate("to", "name email")
-      .populate("settledBy", "name email");
+    const populated = await populateDebt(Debt.findById(debt._id));
 
     res.status(201).json(populated);
   } catch (err) {
@@ -284,13 +318,11 @@ router.post("/settle", auth, async (req, res) => {
 /* ================= GET ALL MY DEBTS ================= */
 router.get("/", auth, async (req, res) => {
   try {
-    const debts = await Debt.find({
-      $or: [{ from: req.user._id }, { to: req.user._id }]
-    })
-      .populate("from", "name email")
-      .populate("to", "name email")
-      .populate("settledBy", "name email")
-      .sort({ recordedAt: -1, createdAt: -1 });
+    const debts = await populateDebt(
+      Debt.find({
+        $or: [{ from: req.user._id }, { to: req.user._id }],
+      })
+    ).sort({ recordedAt: -1, createdAt: -1 });
 
     res.json(debts);
 
@@ -310,16 +342,14 @@ router.get("/with/:userId", auth, async (req, res) => {
       return res.status(400).json({ message: "Invalid user ID" });
     }
 
-    const records = await Debt.find({
-      $or: [
-        { from: myId, to: otherId },
-        { from: otherId, to: myId },
-      ],
-    })
-      .populate("from", "name email")
-      .populate("to", "name email")
-      .populate("settledBy", "name email")
-      .sort({ recordedAt: -1, createdAt: -1 });
+    const records = await populateDebt(
+      Debt.find({
+        $or: [
+          { from: myId, to: otherId },
+          { from: otherId, to: myId },
+        ],
+      })
+    ).sort({ recordedAt: -1, createdAt: -1 });
 
     res.json(records);
 
@@ -339,14 +369,21 @@ router.delete("/all-with/:userId", auth, async (req, res) => {
       return res.status(400).json({ message: "Invalid user ID" });
     }
 
-    await Debt.deleteMany({
-      $or: [
-        { from: myId, to: otherId },
-        { from: otherId, to: myId }
-      ]
+    const result = await Debt.deleteMany({
+      $and: [
+        {
+          $or: [
+            { from: myId, to: otherId },
+            { from: otherId, to: myId },
+          ],
+        },
+        {
+          $or: [{ recordedBy: myId }, { settledBy: myId }],
+        },
+      ],
     });
 
-    res.json({ message: "All records deleted" });
+    res.json({ message: "Your recorded entries were deleted", deletedCount: result.deletedCount });
 
   } catch (err) {
     res.status(500).json({ message: "Failed to delete records" });
@@ -363,27 +400,61 @@ router.delete("/:id", auth, async (req, res) => {
       return res.status(404).json({ message: "Debt not found" });
     }
 
-    if (
-      debt.from.toString() !== req.user._id.toString() &&
-      debt.to.toString() !== req.user._id.toString()
-    ) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
-
-    if (debt.type === "settlement" && debt.settledBy) {
-      if (debt.settledBy.toString() !== req.user._id.toString()) {
-        return res.status(403).json({
-          message: "Only the person who recorded this settlement can delete it",
-        });
-      }
-    }
+    assertParticipant(req, debt);
+    assertCanModifyDebt(req, debt);
 
     await debt.deleteOne();
 
     res.json({ message: "Debt deleted successfully" });
 
   } catch (err) {
-    res.status(500).json({ message: "Failed to delete debt" });
+    const status = err.status || 500;
+    res.status(status).json({ message: err.message || "Failed to delete debt" });
+  }
+});
+
+/* ================= UPDATE DEBT ================= */
+router.put("/:id", auth, async (req, res) => {
+  try {
+    const debt = await Debt.findById(req.params.id);
+
+    if (!debt) {
+      return res.status(404).json({ message: "Debt not found" });
+    }
+
+    assertParticipant(req, debt);
+    assertCanModifyDebt(req, debt);
+
+    const { amount, description, recordedAt } = req.body;
+
+    if (amount !== undefined) {
+      const amt = Number(amount);
+      if (isNaN(amt) || amt <= 0) {
+        return res.status(400).json({ message: "Amount must be positive" });
+      }
+      debt.amount = parseFloat(amt.toFixed(2));
+    }
+
+    if (description !== undefined) {
+      debt.description = String(description).trim() || "No description";
+    }
+
+    if (recordedAt !== undefined) {
+      const parsedRecordedAt = new Date(recordedAt);
+      if (Number.isNaN(parsedRecordedAt.getTime())) {
+        return res.status(400).json({ message: "Invalid recordedAt date" });
+      }
+      debt.recordedAt = parsedRecordedAt;
+    }
+
+    await debt.save();
+
+    const populated = await populateDebt(Debt.findById(debt._id));
+
+    res.json(populated);
+  } catch (err) {
+    const status = err.status || 500;
+    res.status(status).json({ message: err.message || "Failed to update debt" });
   }
 });
 

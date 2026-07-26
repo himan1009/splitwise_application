@@ -135,12 +135,12 @@ export default function AddDebt() {
 
           <div>
             <label className="label">Note (optional)</label>
-            <input
-              type="text"
-              className="input"
+            <textarea
+              className="input resize-none min-h-[3rem]"
               placeholder="e.g. Dinner, cab fare, emergency loan"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              rows={2}
             />
           </div>
 

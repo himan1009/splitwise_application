@@ -5,6 +5,8 @@ import { formatCurrency, formatDate } from "../utils/format";
 import {
   calculateDebtNet,
   canDeleteDebtEntry,
+  canEditDebtEntry,
+  canModifyDebtEntry,
   getDebtEntryMeta,
   groupDebtsByDate,
   isSameUser,
@@ -12,6 +14,7 @@ import {
 } from "../utils/debt";
 import BalanceFlowHero from "../components/BalanceFlowHero";
 import SettleDebtPanel from "../components/SettleDebtPanel";
+import EditDebtModal from "../components/EditDebtModal";
 import PageLoader from "../components/ui/PageLoader";
 import { getStoredUserId } from "../utils/auth";
 
@@ -25,6 +28,7 @@ export default function DebtDetails() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [editingDebt, setEditingDebt] = useState(null);
 
   useEffect(() => {
     setHistory([]);
@@ -75,6 +79,7 @@ export default function DebtDetails() {
 
   const net = calculateDebtNet(history, myId);
   const dateGroups = groupDebtsByDate(history);
+  const myRecordedCount = history.filter((d) => canModifyDebtEntry(d, myId)).length;
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this transaction?")) return;
@@ -83,19 +88,28 @@ export default function DebtDetails() {
       loadHistory();
     } catch (err) {
       console.error("Delete error:", err);
-      alert("Failed to delete transaction");
+      alert(err.response?.data?.message || "Failed to delete transaction");
     }
   };
 
-  const handleDeleteAll = async () => {
-    if (!window.confirm("Delete all records with this person? This cannot be undone.")) return;
+  const handleDeleteMine = async () => {
+    if (
+      !window.confirm(
+        `Delete only the ${myRecordedCount} entr${myRecordedCount === 1 ? "y" : "ies"} you recorded with this person? Entries they recorded will stay.`
+      )
+    ) {
+      return;
+    }
     try {
-      await api.delete(`/debts/all-with/${userId}`);
-      setHistory([]);
+      const res = await api.delete(`/debts/all-with/${userId}`);
+      if (res.data?.deletedCount === 0) {
+        alert("You have no entries you recorded with this person.");
+        return;
+      }
       loadHistory();
     } catch (err) {
-      console.error("Delete all error:", err);
-      alert("Failed to delete records");
+      console.error("Delete mine error:", err);
+      alert(err.response?.data?.message || "Failed to delete your entries");
     }
   };
 
@@ -128,13 +142,13 @@ export default function DebtDetails() {
 
       {otherUser ? (
         <>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="app-avatar !w-12 !h-12 !text-lg">
+          <div className="flex items-center gap-3 mb-1 min-w-0">
+            <div className="app-avatar !w-12 !h-12 !text-lg shrink-0">
               {otherUser.name.charAt(0).toUpperCase()}
             </div>
-            <div>
-              <h1 className="page-title text-xl sm:text-2xl">{otherUser.name}</h1>
-              <p className="text-sm text-dim">{otherUser.email}</p>
+            <div className="min-w-0">
+              <h1 className="page-title text-xl sm:text-2xl break-words">{otherUser.name}</h1>
+              <p className="text-sm text-dim truncate">{otherUser.email}</p>
               {history.length > 0 && (
                 <p className="text-xs text-cyan-400/80 mt-0.5 font-medium">
                   {history.length} total transaction{history.length !== 1 ? "s" : ""} on record
@@ -153,7 +167,7 @@ export default function DebtDetails() {
           />
 
           <p className="text-xs text-dim text-center -mt-2">
-            Shared ledger — either person can record a payment; both see the same balance instantly.
+            Shared ledger — either person can record a payment. Only the person who added an entry can edit or delete it.
           </p>
         </>
       ) : (
@@ -185,9 +199,13 @@ export default function DebtDetails() {
             <span>📅</span> Day-by-day History
             {refreshing && <span className="text-xs text-dim font-normal">Updating...</span>}
           </h2>
-          {history.length > 0 && (
-            <button type="button" onClick={handleDeleteAll} className="btn-ghost !text-red-400 !text-xs min-h-[44px] self-start sm:self-auto">
-              Clear all
+          {myRecordedCount > 0 && (
+            <button
+              type="button"
+              onClick={handleDeleteMine}
+              className="btn-ghost !text-red-400 !text-xs min-h-[44px] self-start sm:self-auto"
+            >
+              Delete my entries ({myRecordedCount})
             </button>
           )}
         </div>
@@ -212,9 +230,9 @@ export default function DebtDetails() {
 
               return (
                 <div key={date}>
-                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/8">
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/8 gap-2">
                     <p className="text-sm font-bold text-cyan-400/90">{label || formatDate(date)}</p>
-                    <p className="text-xs text-dim">
+                    <p className="text-xs text-dim shrink-0">
                       {entries.length} transaction{entries.length !== 1 ? "s" : ""}
                     </p>
                   </div>
@@ -223,6 +241,8 @@ export default function DebtDetails() {
                     {entries.map((d) => {
                       const meta = getDebtEntryMeta(d, myId);
                       const isSettlement = d.type === "settlement";
+                      const canEdit = canEditDebtEntry(d, myId);
+                      const canDelete = canDeleteDebtEntry(d, myId);
 
                       return (
                         <div
@@ -232,49 +252,57 @@ export default function DebtDetails() {
                           }`}
                         >
                           <div className="flex justify-between items-start gap-3 history-entry-row">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p className="font-semibold text-slate-200">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start gap-2 flex-wrap">
+                                <p className="history-entry-title break-words">
                                   {d.description || "Personal debt"}
                                 </p>
                                 {isSettlement && (
-                                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
+                                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/25 shrink-0">
                                     Settlement
                                   </span>
                                 )}
                               </div>
-                              <p className="text-sm text-muted mt-1">{meta.label}</p>
-                              {isSettlement && d.settledBy?.name && (
-                                <p className="text-xs text-cyan-400/70 mt-0.5">
-                                  Recorded by {d.settledBy.name}
+                              <p className="text-sm text-muted mt-1 break-words">{meta.label}</p>
+                              {meta.recorderName && !meta.recordedByMe && (
+                                <p className="text-xs text-cyan-400/70 mt-0.5 break-words">
+                                  Recorded by {meta.recorderName}
                                 </p>
+                              )}
+                              {meta.recordedByMe && (
+                                <p className="text-xs text-emerald-400/70 mt-0.5">You recorded this</p>
                               )}
                               <p className="text-xs text-dim mt-1">
                                 {formatDebtTime(d.recordedAt || d.createdAt)}
                               </p>
                             </div>
-                            <div className="text-right shrink-0">
+                            <div className="text-right shrink-0 flex flex-col items-end gap-1">
                               <p className={`font-bold text-lg ${meta.colorClass}`}>
                                 {meta.sign}
                                 {formatCurrency(d.amount)}
                               </p>
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(d._id)}
-                                disabled={!canDeleteDebtEntry(d, myId)}
-                                className={`text-xs font-semibold mt-2 py-2 px-2 min-h-[44px] rounded-lg transition ${
-                                  canDeleteDebtEntry(d, myId)
-                                    ? "text-red-400/80 hover:text-red-400"
-                                    : "text-dim cursor-not-allowed"
-                                }`}
-                                title={
-                                  isSettlement && !canDeleteDebtEntry(d, myId)
-                                    ? "Only the person who recorded this settlement can delete it"
-                                    : "Delete transaction"
-                                }
-                              >
-                                Delete
-                              </button>
+                              {(canEdit || canDelete) && (
+                                <div className="flex items-center gap-1">
+                                  {canEdit && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingDebt(d)}
+                                      className="history-entry-action text-cyan-400/80 hover:text-cyan-400"
+                                    >
+                                      Edit
+                                    </button>
+                                  )}
+                                  {canDelete && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDelete(d._id)}
+                                      className="history-entry-action text-red-400/80 hover:text-red-400"
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -295,6 +323,13 @@ export default function DebtDetails() {
           </div>
         )}
       </div>
+
+      <EditDebtModal
+        open={Boolean(editingDebt)}
+        debt={editingDebt}
+        onClose={() => setEditingDebt(null)}
+        onSuccess={() => loadHistory()}
+      />
     </div>
   );
 }

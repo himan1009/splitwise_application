@@ -142,12 +142,12 @@ export default function SettleDebtPanel({ otherUserId, otherUserName, net, onSet
 
         <div>
           <label className="label">Note (optional)</label>
-          <input
-            type="text"
-            className="input"
+          <textarea
+            className="input resize-none min-h-[3rem]"
             placeholder="e.g. UPI, cash, returned in instalment"
             value={note}
             onChange={(e) => setNote(e.target.value)}
+            rows={2}
           />
         </div>
 

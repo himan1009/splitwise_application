@@ -72,11 +72,11 @@ export function calculateDebtNet(history, myId) {
 export function getDebtEntryMeta(d, myId) {
   const isSettlement = d.type === "settlement";
   const me = normalizeId(myId);
+  const recorder = getDebtRecorder(d);
+  const recordedByMe = recorder && isSameUser(recorder, me);
+  const recorderName = typeof recorder === "object" ? recorder?.name : null;
 
   if (isSettlement) {
-    const recordedByMe = d.settledBy && isSameUser(d.settledBy, me);
-    const recorderName = d.settledBy?.name;
-
     if (isSameUser(d.to, me)) {
       return {
         label: recordedByMe
@@ -107,18 +107,30 @@ export function getDebtEntryMeta(d, myId) {
 
   if (isSameUser(d.to, me)) {
     return {
-      label: "You lent money",
+      label: recordedByMe
+        ? "You lent money (you recorded)"
+        : recorderName
+        ? `You lent money (recorded by ${recorderName})`
+        : "You lent money",
       direction: "loan-out",
       sign: "+",
       colorClass: "text-emerald-400",
+      recordedByMe,
+      recorderName,
     };
   }
 
   return {
-    label: "You borrowed money",
+    label: recordedByMe
+      ? "You borrowed money (you recorded)"
+      : recorderName
+      ? `You borrowed money (recorded by ${recorderName})`
+      : "You borrowed money",
     direction: "loan-in",
     sign: "−",
     colorClass: "text-red-400",
+    recordedByMe,
+    recorderName,
   };
 }
 
@@ -183,10 +195,28 @@ export function groupEntriesByDate(entries) {
     }));
 }
 
+export function getDebtRecorder(d) {
+  return d?.recordedBy || d?.settledBy || null;
+}
+
+export function getDebtRecorderId(d) {
+  const recorder = getDebtRecorder(d);
+  if (!recorder) return "";
+  return normalizeId(recorder);
+}
+
+export function canModifyDebtEntry(d, myId) {
+  const recorderId = getDebtRecorderId(d);
+  if (!recorderId) return false;
+  return isSameUser(recorderId, myId);
+}
+
 export function canDeleteDebtEntry(d, myId) {
-  if (d.type !== "settlement") return true;
-  if (!d.settledBy) return true;
-  return isSameUser(d.settledBy, myId);
+  return canModifyDebtEntry(d, myId);
+}
+
+export function canEditDebtEntry(d, myId) {
+  return canModifyDebtEntry(d, myId);
 }
 
 export function summarizeDebtsByPerson(debts, myId) {

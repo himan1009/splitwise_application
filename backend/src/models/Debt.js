@@ -29,6 +29,10 @@ const debtSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    recordedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     recordedAt: {
       type: Date,
       default: Date.now,
