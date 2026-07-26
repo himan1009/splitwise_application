@@ -138,7 +138,8 @@ export default function AddEntryModal({ open, onClose, onSuccess, defaultDate, e
       title={isEdit ? "Edit Entry" : "Add Entry"}
       size="md"
     >
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="modal-form">
+        <div className="modal-form-fields space-y-5">
         <div className="type-toggle-wrap">
           <button
             type="button"
@@ -229,7 +230,9 @@ export default function AddEntryModal({ open, onClose, onSuccess, defaultDate, e
         </div>
 
         <SlowLoadHint active={loading} compact />
+        </div>
 
+        <div className="modal-form-actions">
         <div className="flex gap-3">
           <button
             type="submit"
@@ -247,6 +250,7 @@ export default function AddEntryModal({ open, onClose, onSuccess, defaultDate, e
               Cancel
             </button>
           )}
+        </div>
         </div>
       </form>
     </Modal>

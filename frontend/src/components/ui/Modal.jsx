@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export default function Modal({ open, onClose, title, children, size = "md" }) {
   useEffect(() => {
@@ -6,6 +7,7 @@ export default function Modal({ open, onClose, title, children, size = "md" }) {
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    document.body.classList.add("modal-open");
 
     const onKeyDown = (event) => {
       if (event.key === "Escape") onClose();
@@ -14,6 +16,7 @@ export default function Modal({ open, onClose, title, children, size = "md" }) {
 
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.body.classList.remove("modal-open");
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [open, onClose]);
@@ -26,7 +29,7 @@ export default function Modal({ open, onClose, title, children, size = "md" }) {
     lg: "max-w-2xl",
   };
 
-  return (
+  return createPortal(
     <div className="app-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
       <div
         className={`app-modal ${sizes[size]}`}
@@ -45,6 +48,7 @@ export default function Modal({ open, onClose, title, children, size = "md" }) {
         </div>
         <div className="app-modal-body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
