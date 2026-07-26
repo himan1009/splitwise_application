@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "../utils/format";
 import DebtBalanceRow from "../components/DebtBalanceRow";
 import PageLoader from "../components/ui/PageLoader";
-import { isSameUser, summarizeDebtsByPerson, getRecentDebtsByDate, formatDebtTime } from "../utils/debt";
+import { isSameUser, summarizeDebtsByPerson, getRecentDebtsByDate, formatDebtTime, formatDebtEntrySign, getDebtEntryCashDelta } from "../utils/debt";
 import { getStoredUserId } from "../utils/auth";
 
 import { getApiErrorMessage } from "../utils/apiErrors";
@@ -180,7 +180,7 @@ export default function Debts() {
                   {entries.map((d) => {
                     const other = isSameUser(d.from, myId) ? d.to : d.from;
                     const isSettlement = d.type === "settlement";
-                    const iReceived = isSameUser(d.to, myId);
+                    const cashDelta = getDebtEntryCashDelta(d, myId);
                     const when = d.recordedAt || d.createdAt;
 
                     return (
@@ -205,29 +205,25 @@ export default function Debts() {
                             <p className="text-sm text-muted mt-0.5 break-words">
                               with {other.name} ·{" "}
                               {isSettlement
-                                ? iReceived
+                                ? isSameUser(d.to, myId)
                                   ? d.recordedBy?.name || d.settledBy?.name
                                     ? `payment received · recorded by ${(d.recordedBy || d.settledBy)?.name}`
                                     : "payment received"
                                   : d.recordedBy?.name || d.settledBy?.name
                                   ? `payment sent · recorded by ${(d.recordedBy || d.settledBy)?.name}`
                                   : "payment sent"
-                                : iReceived
+                                : cashDelta < 0
                                 ? "you lent"
                                 : "you borrowed"}
                             </p>
                           </div>
                           <p
                             className={`font-bold shrink-0 ${
-                              isSettlement
-                                ? "text-cyan-400"
-                                : iReceived
-                                ? "text-emerald-400"
-                                : "text-red-400"
+                              cashDelta >= 0 ? "text-emerald-400" : "text-red-400"
                             }`}
                           >
-                            {isSettlement ? "" : iReceived ? "+" : "−"}
-                            {formatCurrency(d.amount)}
+                            {formatDebtEntrySign(cashDelta)}
+                            {formatCurrency(Math.abs(cashDelta))}
                           </p>
                         </div>
                       </div>

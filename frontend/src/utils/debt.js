@@ -69,12 +69,48 @@ export function calculateDebtNet(history, myId) {
   return total;
 }
 
+/** Impact on outstanding balance (positive = more owed to you). */
+export function getDebtEntryNetDelta(d, myId) {
+  const amt = Number(d.amount);
+  const me = normalizeId(myId);
+  const isSettlement = d.type === "settlement";
+
+  if (isSettlement) {
+    if (isSameUser(d.to, me)) return -amt;
+    return +amt;
+  }
+  if (isSameUser(d.from, me)) return -amt;
+  return +amt;
+}
+
+/** Cash in/out from your perspective (positive = money in, negative = money out). */
+export function getDebtEntryCashDelta(d, myId) {
+  const amt = Number(d.amount);
+  const me = normalizeId(myId);
+  const isSettlement = d.type === "settlement";
+
+  if (isSettlement) {
+    if (isSameUser(d.to, me)) return +amt;
+    return -amt;
+  }
+  if (isSameUser(d.to, me)) return -amt;
+  return +amt;
+}
+
+export function formatDebtEntrySign(delta) {
+  if (Math.abs(delta) < 0.01) return "";
+  return delta > 0 ? "+" : "−";
+}
+
 export function getDebtEntryMeta(d, myId) {
   const isSettlement = d.type === "settlement";
   const me = normalizeId(myId);
   const recorder = getDebtRecorder(d);
   const recordedByMe = recorder && isSameUser(recorder, me);
   const recorderName = typeof recorder === "object" ? recorder?.name : null;
+  const cashDelta = getDebtEntryCashDelta(d, myId);
+  const sign = formatDebtEntrySign(cashDelta);
+  const isCashIn = cashDelta > 0;
 
   if (isSettlement) {
     if (isSameUser(d.to, me)) {
@@ -85,10 +121,11 @@ export function getDebtEntryMeta(d, myId) {
           ? `Payment received (recorded by ${recorderName})`
           : "Payment received",
         direction: "in",
-        sign: "+",
-        colorClass: "text-cyan-400",
+        sign,
+        colorClass: isCashIn ? "text-emerald-400" : "text-red-400",
         recordedByMe,
         recorderName,
+        cashDelta,
       };
     }
     return {
@@ -98,10 +135,11 @@ export function getDebtEntryMeta(d, myId) {
         ? `Payment sent (recorded by ${recorderName})`
         : "Payment sent",
       direction: "out",
-      sign: "−",
-      colorClass: "text-violet-400",
+      sign,
+      colorClass: isCashIn ? "text-emerald-400" : "text-red-400",
       recordedByMe,
       recorderName,
+      cashDelta,
     };
   }
 
@@ -113,10 +151,11 @@ export function getDebtEntryMeta(d, myId) {
         ? `You lent money (recorded by ${recorderName})`
         : "You lent money",
       direction: "loan-out",
-      sign: "+",
-      colorClass: "text-emerald-400",
+      sign,
+      colorClass: isCashIn ? "text-emerald-400" : "text-red-400",
       recordedByMe,
       recorderName,
+      cashDelta,
     };
   }
 
@@ -127,10 +166,11 @@ export function getDebtEntryMeta(d, myId) {
       ? `You borrowed money (recorded by ${recorderName})`
       : "You borrowed money",
     direction: "loan-in",
-    sign: "−",
-    colorClass: "text-red-400",
+    sign,
+    colorClass: isCashIn ? "text-emerald-400" : "text-red-400",
     recordedByMe,
     recorderName,
+    cashDelta,
   };
 }
 

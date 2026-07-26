@@ -7,6 +7,8 @@ import {
   canDeleteDebtEntry,
   canEditDebtEntry,
   canModifyDebtEntry,
+  formatDebtEntrySign,
+  getDebtEntryCashDelta,
   getDebtEntryMeta,
   groupDebtsByDate,
   isSameUser,
@@ -219,14 +221,10 @@ export default function DebtDetails() {
         ) : (
           <div className="space-y-6">
             {dateGroups.map(({ date, label, entries }) => {
-              const dayNet = entries.reduce((sum, d) => {
-                const meta = getDebtEntryMeta(d, myId);
-                const amt = Number(d.amount);
-                if (meta.direction === "in" || meta.direction === "loan-out") {
-                  return sum + amt;
-                }
-                return sum - amt;
-              }, 0);
+              const dayCashMovement = entries.reduce(
+                (sum, d) => sum + getDebtEntryCashDelta(d, myId),
+                0
+              );
 
               return (
                 <div key={date}>
@@ -311,10 +309,10 @@ export default function DebtDetails() {
                   </div>
 
                   <p className="text-xs text-dim mt-2 text-right">
-                    Day movement:{" "}
-                    <span className={dayNet >= 0 ? "text-emerald-400" : "text-red-400"}>
-                      {dayNet >= 0 ? "+" : "−"}
-                      {formatCurrency(Math.abs(dayNet))}
+                    Day cash movement:{" "}
+                    <span className={dayCashMovement >= 0 ? "text-emerald-400" : "text-red-400"}>
+                      {formatDebtEntrySign(dayCashMovement)}
+                      {formatCurrency(Math.abs(dayCashMovement))}
                     </span>
                   </p>
                 </div>
