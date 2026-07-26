@@ -194,18 +194,21 @@ export default function GroupDetails() {
       </button>
 
       <div className="detail-hero detail-hero-indigo">
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <p className="text-white/60 text-sm font-medium">Group</p>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white" style={{ fontFamily: "Outfit, sans-serif" }}>
-              {group.name}
-            </h1>
-            <p className="text-white/50 text-sm mt-1">{group.members.length} members</p>
+        <div className="relative z-10 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-white/60 text-sm font-medium">Group</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white break-words" style={{ fontFamily: "Outfit, sans-serif" }}>
+                {group.name}
+              </h1>
+              <p className="text-white/50 text-sm mt-1">{group.members.length} members</p>
+            </div>
+            {summary.length === 0 && (
+              <span className="badge-green !text-sm self-start">🎉 All settled</span>
+            )}
           </div>
-          {summary.length === 0 ? (
-            <span className="badge-green !text-sm">🎉 All settled</span>
-          ) : (
-            <div className="w-full sm:w-auto space-y-3">
+          {summary.length > 0 && (
+            <div className="w-full space-y-3">
               {youOwe.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs text-white/50 text-center sm:text-right">

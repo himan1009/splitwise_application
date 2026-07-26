@@ -70,7 +70,7 @@ export default function AppLayout({ setIsAuthenticated }) {
               <button
                 type="button"
                 onClick={logout}
-                className="btn-ghost !px-3 !py-2 text-xs sm:text-sm touch-target"
+                className="btn-ghost !px-3 text-xs sm:text-sm touch-target min-h-[44px]"
                 aria-label="Logout"
               >
                 <span className="sm:hidden">Logout</span>

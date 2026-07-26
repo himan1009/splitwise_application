@@ -161,11 +161,11 @@ export default function Debts() {
 
       {recentByDate.length > 0 && (
         <div className="card">
-          <div className="flex items-center justify-between mb-5 gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-1">
             <h2 className="section-title flex items-center gap-2">
               <span>📜</span> Recent Activity
             </h2>
-            <span className="text-xs text-dim font-medium shrink-0">Newest first · by time</span>
+            <span className="text-xs text-dim font-medium">Newest first · by time</span>
           </div>
           <div className="space-y-5">
             {recentByDate.map(({ date, label, entries }) => (

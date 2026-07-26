@@ -287,25 +287,6 @@ export default function MonthlyTracker() {
                       </span>
                     )}
                   </div>
-                  <span
-                    className="cal-day-add"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddForDay(dateStr);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleAddForDay(dateStr);
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Add entry for day ${dayNum}`}
-                  >
-                    +
-                  </span>
                 </button>
               );
             })}
@@ -343,7 +324,7 @@ export default function MonthlyTracker() {
                 <button
                   type="button"
                   onClick={() => handleAddForDay(selectedDate)}
-                  className="text-xs font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-full bg-white/5 border border-white/10 transition"
+                  className="cal-action-btn text-xs font-semibold text-slate-300 hover:text-white rounded-full bg-white/5 border border-white/10 transition"
                 >
                   + Add
                 </button>
@@ -351,7 +332,7 @@ export default function MonthlyTracker() {
                   <button
                     type="button"
                     onClick={() => setShowDayModal(true)}
-                    className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 transition"
+                    className="cal-action-btn text-xs font-semibold text-cyan-400 hover:text-cyan-300 rounded-full bg-cyan-500/10 border border-cyan-500/20 transition"
                   >
                     View details
                   </button>

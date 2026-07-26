@@ -23,13 +23,13 @@ export default function Footer({ setIsAuthenticated }) {
 
   return (
     <footer className="app-footer mt-auto">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-        <p className="text-xs text-slate-500 font-medium">
+      <div className="app-footer-inner max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center gap-3">
+        <p className="text-xs text-slate-500 font-medium shrink-0">
           © {new Date().getFullYear()} FinTrack
         </p>
         <button
           onClick={deleteAccount}
-          className="text-xs text-slate-500 hover:text-red-400 font-medium transition"
+          className="text-xs text-slate-500 hover:text-red-400 font-medium transition py-2 px-3 min-h-[44px] rounded-lg touch-target"
         >
           Delete Account
         </button>

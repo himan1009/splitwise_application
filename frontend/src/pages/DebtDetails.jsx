@@ -180,13 +180,13 @@ export default function DebtDetails() {
       </div>
 
       <div className="card">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
           <h2 className="section-title flex items-center gap-2">
             <span>📅</span> Day-by-day History
             {refreshing && <span className="text-xs text-dim font-normal">Updating...</span>}
           </h2>
           {history.length > 0 && (
-            <button type="button" onClick={handleDeleteAll} className="btn-ghost !text-red-400 !text-xs">
+            <button type="button" onClick={handleDeleteAll} className="btn-ghost !text-red-400 !text-xs min-h-[44px] self-start sm:self-auto">
               Clear all
             </button>
           )}
@@ -262,7 +262,7 @@ export default function DebtDetails() {
                                 type="button"
                                 onClick={() => handleDelete(d._id)}
                                 disabled={!canDeleteDebtEntry(d, myId)}
-                                className={`text-xs font-semibold mt-2 transition ${
+                                className={`text-xs font-semibold mt-2 py-2 px-2 min-h-[44px] rounded-lg transition ${
                                   canDeleteDebtEntry(d, myId)
                                     ? "text-red-400/80 hover:text-red-400"
                                     : "text-dim cursor-not-allowed"

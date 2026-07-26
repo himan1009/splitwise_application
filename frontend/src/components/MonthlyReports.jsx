@@ -184,7 +184,7 @@ export default function MonthlyReports({
           <div className="space-y-4">
             {analysis.discretionaryBreakdown.map((cat) => (
               <div key={cat._id}>
-                <div className="flex justify-between text-sm mb-1.5 gap-2 flex-wrap">
+                <div className="flex justify-between text-sm mb-1.5 gap-2 flex-wrap report-line-row">
                   <span className="font-semibold text-slate-300 flex items-center gap-2">
                     <span>{cat.meta.icon}</span> {cat.meta.label}
                     {cat.flag && (
@@ -232,7 +232,7 @@ export default function MonthlyReports({
 
                 return (
                   <div key={cat._id}>
-                    <div className="flex justify-between text-sm mb-1.5 gap-2 flex-wrap">
+                    <div className="flex justify-between text-sm mb-1.5 gap-2 flex-wrap report-line-row">
                       <span className="font-semibold text-slate-300 flex items-center gap-2">
                         <span>{meta.icon}</span> {meta.label}
                         {isDiscretionary && pctIncome >= 20 && (
@@ -275,7 +275,7 @@ export default function MonthlyReports({
                   const pct = totalIncome > 0 ? (data.total / totalIncome) * 100 : 0;
                   return (
                     <div key={cat}>
-                      <div className="flex justify-between text-sm mb-1.5">
+                      <div className="flex justify-between text-sm mb-1.5 report-line-row gap-2">
                         <span className="font-semibold text-slate-300 flex items-center gap-2">
                           <span>{meta.icon}</span> {meta.label}
                         </span>
@@ -339,10 +339,10 @@ export default function MonthlyReports({
               const meta = getCategoryMeta(entry.category);
               return (
                 <div key={entry._id} className="list-item !py-3">
-                  <div className="flex items-center gap-3">
-                    <span className="icon-box text-lg">{meta.icon}</span>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-300">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="icon-box text-lg shrink-0">{meta.icon}</span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-300 truncate">
                         {meta.label}
                         {entry.message && (
                           <span className="text-dim font-normal"> — {entry.message}</span>

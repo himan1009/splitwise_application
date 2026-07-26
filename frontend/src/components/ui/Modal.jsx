@@ -21,6 +21,31 @@ export default function Modal({ open, onClose, title, children, size = "md" }) {
     };
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (!open || !window.visualViewport) return undefined;
+
+    const viewport = window.visualViewport;
+
+    const syncModalHeight = () => {
+      const maxHeight = `${Math.round(viewport.height * 0.92)}px`;
+      document.querySelectorAll(".app-modal").forEach((modal) => {
+        modal.style.maxHeight = maxHeight;
+      });
+    };
+
+    syncModalHeight();
+    viewport.addEventListener("resize", syncModalHeight);
+    viewport.addEventListener("scroll", syncModalHeight);
+
+    return () => {
+      viewport.removeEventListener("resize", syncModalHeight);
+      viewport.removeEventListener("scroll", syncModalHeight);
+      document.querySelectorAll(".app-modal").forEach((modal) => {
+        modal.style.maxHeight = "";
+      });
+    };
+  }, [open]);
+
   if (!open) return null;
 
   const sizes = {

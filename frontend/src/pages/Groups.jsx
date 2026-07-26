@@ -48,7 +48,7 @@ export default function Groups() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="metric-card" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
           <p className="metric-label">Your Groups</p>
           <p className="metric-value">{groups.length}</p>
@@ -58,7 +58,7 @@ export default function Groups() {
           <p className="metric-value">{totalMembers}</p>
         </div>
         <div
-          className="metric-card col-span-2 sm:col-span-1"
+          className="metric-card"
           style={{ background: "linear-gradient(135deg, #475569, #334155)" }}
         >
           <p className="metric-label">Use case</p>
