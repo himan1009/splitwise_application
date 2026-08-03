@@ -3,6 +3,7 @@ import api from "../api/api";
 import AddEntryModal from "../components/AddEntryModal";
 import DaySummaryModal from "../components/DaySummaryModal";
 import MonthlyReports from "../components/MonthlyReports";
+import CategoryInsightsPanel from "../components/CategoryInsightsPanel";
 import Badge from "../components/ui/Badge";
 import PageLoader from "../components/ui/PageLoader";
 import {
@@ -20,6 +21,11 @@ import {
 import { sortEntriesByRecent } from "../utils/debt";
 import { getApiErrorMessage } from "../utils/apiErrors";
 import { getCategoryMeta } from "../constants/categories";
+import {
+  buildCategoryAnalytics,
+  buildIncomeByCategory,
+  buildIncomeCategoryAnalytics,
+} from "../utils/categoryAnalytics";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -35,6 +41,7 @@ export default function MonthlyTracker() {
   const [showDayModal, setShowDayModal] = useState(false);
   const [addDate, setAddDate] = useState(null);
   const [view, setView] = useState("reports");
+  const [categoryFilter, setCategoryFilter] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -67,6 +74,7 @@ export default function MonthlyTracker() {
 
   useEffect(() => {
     loadData();
+    setCategoryFilter(null);
   }, [loadData]);
 
   const dailyMap = {};
@@ -112,6 +120,30 @@ export default function MonthlyTracker() {
     summary && summary.totalIncome > 0
       ? Math.min((summary.totalExpenses / summary.totalIncome) * 100, 100)
       : 0;
+
+  const totalExpenses = summary?.totalExpenses ?? 0;
+  const totalIncome = summary?.totalIncome ?? 0;
+  const expenseCategories = buildCategoryAnalytics({
+    byCategory: summary?.byCategory ?? [],
+    entries,
+    totalExpenses,
+    totalIncome,
+  });
+  const incomeCategories = buildIncomeCategoryAnalytics({
+    incomeByCategory: buildIncomeByCategory(entries),
+    totalIncome,
+  });
+
+  const filteredEntries = categoryFilter
+    ? entries.filter((e) => e.category === categoryFilter)
+    : entries;
+
+  const handleCategoryClick = (cat) => {
+    setCategoryFilter(cat._id);
+    setView("list");
+  };
+
+  const clearCategoryFilter = () => setCategoryFilter(null);
 
   if (loading && !summary) {
     return <PageLoader message="Loading tracker..." />;
@@ -346,18 +378,41 @@ export default function MonthlyTracker() {
       {/* List view */}
       {view === "list" && (
         <div className="card !p-2 sm:!p-3">
-          {entries.length === 0 ? (
-            <div className="empty-state !py-12">
-              <div className="text-5xl mb-4">📝</div>
-              <p className="text-slate-300 font-semibold">No entries this month</p>
-              <p className="text-sm text-dim mt-1">Start by adding your salary or an expense</p>
-              <button onClick={() => setShowAddModal(true)} className="btn-primary mt-6">
-                Add your first entry
+          {categoryFilter && (
+            <div className="flex items-center justify-between gap-3 px-3 py-2 mb-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
+              <p className="text-sm text-cyan-300">
+                Filtered: {getCategoryMeta(categoryFilter).icon}{" "}
+                {getCategoryMeta(categoryFilter).label}
+              </p>
+              <button type="button" onClick={clearCategoryFilter} className="text-xs font-semibold text-cyan-400">
+                Clear
               </button>
+            </div>
+          )}
+          {filteredEntries.length === 0 ? (
+            <div className="empty-state !py-12">
+              <div className="text-5xl mb-4">{categoryFilter ? "🔍" : "📝"}</div>
+              <p className="text-slate-300 font-semibold">
+                {categoryFilter ? "No transactions in this category" : "No entries this month"}
+              </p>
+              <p className="text-sm text-dim mt-1">
+                {categoryFilter
+                  ? "Try another category or clear the filter"
+                  : "Start by adding your salary or an expense"}
+              </p>
+              {categoryFilter ? (
+                <button type="button" onClick={clearCategoryFilter} className="btn-secondary mt-6">
+                  Clear filter
+                </button>
+              ) : (
+                <button onClick={() => setShowAddModal(true)} className="btn-primary mt-6">
+                  Add your first entry
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-1">
-              {sortEntriesByRecent(entries).map((entry) => (
+              {sortEntriesByRecent(filteredEntries).map((entry) => (
                 <div key={entry._id} className="list-item group">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="icon-box">{getCategoryMeta(entry.category).icon}</div>
@@ -400,42 +455,27 @@ export default function MonthlyTracker() {
 
       {/* Categories view */}
       {view === "categories" && (
-        <div className="card">
-          {!summary?.byCategory?.length ? (
-            <div className="empty-state !py-12">
-              <p className="text-4xl mb-3">🏷️</p>
-              <p className="text-muted">No expense categories yet this month</p>
-            </div>
-          ) : (
-            <div className="space-y-5">
-              {summary.byCategory.map((cat) => {
-                const meta = getCategoryMeta(cat._id);
-                const pct =
-                  summary.totalExpenses > 0
-                    ? (cat.total / summary.totalExpenses) * 100
-                    : 0;
-                return (
-                  <div key={cat._id} className="flex items-center gap-4">
-                    <div className="icon-box text-2xl">{meta.icon}</div>
-                    <div className="flex-1">
-                      <div className="flex justify-between mb-2">
-                        <span className="font-bold text-slate-200">{meta.label}</span>
-                        <span className="text-muted text-sm">
-                          {formatCurrency(cat.total)} · {cat.count} txns
-                        </span>
-                      </div>
-                      <div className="progress-track h-2.5">
-                        <div
-                          className="h-full bg-gradient-to-r from-cyan-500 to-violet-500 rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+        <div className="space-y-6">
+          <CategoryInsightsPanel
+            title="Expense Categories"
+            subtitle="Tap a category to see its transactions"
+            icon="🏷️"
+            categories={expenseCategories}
+            totalAmount={totalExpenses}
+            totalLabel="Total spent"
+            showIncomePct
+            emptyMessage="No expense categories yet this month"
+            onCategoryClick={handleCategoryClick}
+          />
+          <CategoryInsightsPanel
+            title="Income Categories"
+            subtitle="Breakdown of money earned this month"
+            icon="💰"
+            categories={incomeCategories}
+            totalAmount={totalIncome}
+            totalLabel="Total income"
+            emptyMessage="No income categories yet this month"
+          />
         </div>
       )}
 

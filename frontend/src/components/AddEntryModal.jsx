@@ -72,21 +72,13 @@ export default function AddEntryModal({ open, onClose, onSuccess, defaultDate, e
   const switchType = (newType) => {
     setType(newType);
     const list = newType === "income" ? categories.income : categories.expense;
-    if (message.trim() && list.includes("other")) {
-      setCategory("other");
-    } else if (list.length) {
-      setCategory(list[0]);
-    }
+    if (!list.length) return;
+    if (category && list.includes(category)) return;
+    setCategory(list[0]);
   };
 
   const handleMessageChange = (e) => {
-    const val = e.target.value;
-    setMessage(val);
-
-    const list = type === "income" ? categories.income : categories.expense;
-    if (val.trim() && list.includes("other")) {
-      setCategory("other");
-    }
+    setMessage(e.target.value);
   };
 
   const handleSubmit = async (e) => {
@@ -214,16 +206,11 @@ export default function AddEntryModal({ open, onClose, onSuccess, defaultDate, e
         </div>
 
         <div>
-          <label className="label">
-            Note (optional)
-            {message.trim() && (
-              <span className="ml-2 text-dim font-normal text-xs">→ category set to Other</span>
-            )}
-          </label>
+          <label className="label">Note (optional)</label>
           <textarea
             value={message}
             onChange={handleMessageChange}
-            placeholder="What was this for? (sets category to Other)"
+            placeholder="What was this for? e.g. dinner with friends"
             rows={2}
             className="input resize-none"
           />

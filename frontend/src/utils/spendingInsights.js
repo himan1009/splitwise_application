@@ -7,6 +7,9 @@ export const ESSENTIAL_CATEGORIES = [
   "health",
   "education",
   "transport",
+  "groceries",
+  "insurance",
+  "emi_loans",
 ];
 
 export const DISCRETIONARY_CATEGORIES = [
@@ -14,6 +17,10 @@ export const DISCRETIONARY_CATEGORIES = [
   "shopping",
   "entertainment",
   "food",
+  "subscriptions",
+  "travel",
+  "personal_care",
+  "charity",
 ];
 
 const DISCRETIONARY_THRESHOLD_PCT = 35;
@@ -99,6 +106,23 @@ export function buildSpendingInsights({
   const incomeEntries = entries.filter((e) => e.type === "income");
   const savingsRate = getSavingsRate(totalIncome, balance);
 
+  const biggestExpense = expenseEntries.reduce(
+    (max, e) => (e.amount > (max?.amount ?? 0) ? e : max),
+    null
+  );
+  const spendingDays = dailyData.filter((d) => d.expenses > 0).length;
+  const daysInMonth = dailyData.length || 30;
+  const noSpendDays = Math.max(0, daysInMonth - spendingDays);
+  const categoryCount = byCategory.length;
+  const prevExpenseChange =
+    prevSummary && prevSummary.totalExpenses > 0
+      ? ((totalExpenses - prevSummary.totalExpenses) / prevSummary.totalExpenses) * 100
+      : null;
+  const prevBalanceChange =
+    prevSummary && prevSummary.balance !== undefined
+      ? balance - prevSummary.balance
+      : null;
+
   const essentialSpend = sumCategoryTotals(byCategory, ESSENTIAL_CATEGORIES);
   const discretionarySpend = sumCategoryTotals(byCategory, DISCRETIONARY_CATEGORIES);
   const discretionaryPct =
@@ -107,7 +131,6 @@ export function buildSpendingInsights({
     totalExpenses > 0 ? (essentialSpend / totalExpenses) * 100 : 0;
 
   const topCategory = byCategory[0] ?? null;
-  const spendingDays = dailyData.filter((d) => d.expenses > 0).length;
   const avgDailySpend = spendingDays > 0 ? totalExpenses / spendingDays : 0;
   const incomePerDay = totalIncome > 0 ? totalIncome / 30 : 0;
 
@@ -286,7 +309,7 @@ export function buildSpendingInsights({
     healthScore,
     health,
     narrative,
-    insights: insights.slice(0, 6),
+    insights: insights.slice(0, 8),
     stats: {
       savingsRate,
       discretionarySpend,
@@ -295,8 +318,13 @@ export function buildSpendingInsights({
       essentialPct,
       avgDailySpend,
       spendingDays,
+      noSpendDays,
       expenseCount: expenseEntries.length,
       incomeCount: incomeEntries.length,
+      categoryCount,
+      biggestExpense,
+      prevExpenseChange,
+      prevBalanceChange,
     },
     discretionaryBreakdown,
   };

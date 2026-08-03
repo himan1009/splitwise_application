@@ -2,7 +2,13 @@ import { formatCurrency, formatDate, formatMonth, formatTime } from "../utils/fo
 import { sortEntriesByRecent } from "../utils/debt";
 import { getCategoryMeta } from "../constants/categories";
 import { buildSpendingInsights } from "../utils/spendingInsights";
+import {
+  buildCategoryAnalytics,
+  buildIncomeByCategory,
+  buildIncomeCategoryAnalytics,
+} from "../utils/categoryAnalytics";
 import ReportHealthCard from "./ReportHealthCard";
+import CategoryInsightsPanel from "./CategoryInsightsPanel";
 
 export default function MonthlyReports({
   summary,
@@ -25,15 +31,16 @@ export default function MonthlyReports({
     prevSummary,
   });
 
-  const incomeEntries = entries.filter((e) => e.type === "income");
-
-  const incomeByCategory = {};
-  incomeEntries.forEach((e) => {
-    if (!incomeByCategory[e.category]) {
-      incomeByCategory[e.category] = { total: 0, count: 0 };
-    }
-    incomeByCategory[e.category].total += e.amount;
-    incomeByCategory[e.category].count += 1;
+  const incomeByCategory = buildIncomeByCategory(entries);
+  const expenseCategories = buildCategoryAnalytics({
+    byCategory: summary?.byCategory ?? [],
+    entries,
+    totalExpenses,
+    totalIncome,
+  });
+  const incomeCategories = buildIncomeCategoryAnalytics({
+    incomeByCategory,
+    totalIncome,
   });
 
   const topSpendingDays = [...dailyData]
@@ -94,6 +101,47 @@ export default function MonthlyReports({
                 </p>
               </div>
             ))}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            {[
+              analysis.stats.biggestExpense && {
+                label: "Largest expense",
+                value: formatCurrency(analysis.stats.biggestExpense.amount),
+                sub: getCategoryMeta(analysis.stats.biggestExpense.category).label,
+              },
+              analysis.stats.categoryCount > 0 && {
+                label: "Categories used",
+                value: analysis.stats.categoryCount,
+                sub: "expense types",
+              },
+              {
+                label: "Active spend days",
+                value: analysis.stats.spendingDays,
+                sub: `${analysis.stats.noSpendDays} no-spend days`,
+              },
+              analysis.stats.prevExpenseChange !== null && {
+                label: "Vs last month",
+                value: `${analysis.stats.prevExpenseChange > 0 ? "+" : ""}${analysis.stats.prevExpenseChange.toFixed(0)}%`,
+                sub: "expense change",
+                warn: analysis.stats.prevExpenseChange > 10,
+              },
+            ]
+              .filter(Boolean)
+              .map((item) => (
+                <div key={item.label} className="report-highlight-chip">
+                  <p className="text-white/50 text-[0.65rem] sm:text-xs uppercase tracking-wide">
+                    {item.label}
+                  </p>
+                  <p
+                    className={`text-sm sm:text-base font-bold mt-0.5 ${item.warn ? "text-amber-300" : "text-white"}`}
+                    style={{ fontFamily: "Outfit, sans-serif" }}
+                  >
+                    {item.value}
+                  </p>
+                  {item.sub && <p className="text-white/45 text-[0.65rem] sm:text-xs mt-0.5">{item.sub}</p>}
+                </div>
+              ))}
           </div>
         </div>
       </div>
@@ -213,88 +261,26 @@ export default function MonthlyReports({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="section-title mb-4 flex items-center gap-2">
-            <span>🏷️</span> Spending by Category
-          </h3>
-          {!summary?.byCategory?.length ? (
-            <p className="text-dim text-sm">No expenses recorded</p>
-          ) : (
-            <div className="space-y-4">
-              {summary.byCategory.map((cat) => {
-                const meta = getCategoryMeta(cat._id);
-                const pct = totalExpenses > 0 ? (cat.total / totalExpenses) * 100 : 0;
-                const pctIncome =
-                  totalIncome > 0 ? (cat.total / totalIncome) * 100 : 0;
-                const isDiscretionary = analysis.discretionaryBreakdown.some(
-                  (d) => d._id === cat._id
-                );
+        <CategoryInsightsPanel
+          title="Spending by Category"
+          subtitle="Totals, averages, and share of monthly spend"
+          icon="🏷️"
+          categories={expenseCategories}
+          totalAmount={totalExpenses}
+          totalLabel="Total spent"
+          showIncomePct
+          emptyMessage="No expenses recorded this month"
+        />
 
-                return (
-                  <div key={cat._id}>
-                    <div className="flex justify-between text-sm mb-1.5 gap-2 flex-wrap report-line-row">
-                      <span className="font-semibold text-slate-300 flex items-center gap-2">
-                        <span>{meta.icon}</span> {meta.label}
-                        {isDiscretionary && pctIncome >= 20 && (
-                          <span className="discretionary-flag">Review</span>
-                        )}
-                      </span>
-                      <span className="text-muted">
-                        {formatCurrency(cat.total)} ({pct.toFixed(0)}%)
-                      </span>
-                    </div>
-                    <div className="progress-track h-2.5">
-                      <div
-                        className={`h-full rounded-full ${
-                          isDiscretionary
-                            ? "bg-gradient-to-r from-amber-400 to-orange-500"
-                            : "bg-gradient-to-r from-rose-400 to-red-500"
-                        }`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="card">
-          <h3 className="section-title mb-4 flex items-center gap-2">
-            <span>💰</span> Income Sources
-          </h3>
-          {Object.keys(incomeByCategory).length === 0 ? (
-            <p className="text-dim text-sm">No income recorded</p>
-          ) : (
-            <div className="space-y-4">
-              {Object.entries(incomeByCategory)
-                .sort(([, a], [, b]) => b.total - a.total)
-                .map(([cat, data]) => {
-                  const meta = getCategoryMeta(cat);
-                  const pct = totalIncome > 0 ? (data.total / totalIncome) * 100 : 0;
-                  return (
-                    <div key={cat}>
-                      <div className="flex justify-between text-sm mb-1.5 report-line-row gap-2">
-                        <span className="font-semibold text-slate-300 flex items-center gap-2">
-                          <span>{meta.icon}</span> {meta.label}
-                        </span>
-                        <span className="text-muted">
-                          {formatCurrency(data.total)} ({pct.toFixed(0)}%)
-                        </span>
-                      </div>
-                      <div className="progress-track h-2.5">
-                        <div
-                          className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          )}
-        </div>
+        <CategoryInsightsPanel
+          title="Income Sources"
+          subtitle="Where your money came from this month"
+          icon="💰"
+          categories={incomeCategories}
+          totalAmount={totalIncome}
+          totalLabel="Total income"
+          emptyMessage="No income recorded this month"
+        />
       </div>
 
       <div className="card">

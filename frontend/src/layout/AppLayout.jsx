@@ -30,7 +30,7 @@ export default function AppLayout({ setIsAuthenticated }) {
       <div className="app-bg-aurora app-bg-aurora-2" />
       <div className="app-bg-aurora app-bg-aurora-3" />
 
-      <header className="app-header">
+      <header className="app-header safe-top">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14 sm:h-16">
             <button

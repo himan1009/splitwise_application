@@ -10,23 +10,33 @@ const parsePositiveAmount = (value) => {
 
 const EXPENSE_CATEGORIES = [
   "food",
+  "groceries",
   "transport",
   "rent",
   "utilities",
   "shopping",
+  "subscriptions",
+  "travel",
   "partying",
-  "investment",
-  "health",
   "entertainment",
+  "health",
+  "personal_care",
   "education",
+  "insurance",
+  "emi_loans",
+  "investment",
+  "charity",
   "other",
 ];
 
 const INCOME_CATEGORIES = [
   "salary",
   "freelance",
+  "bonus",
   "investment_return",
+  "rental_income",
   "gift",
+  "refund",
   "other",
 ];
 
