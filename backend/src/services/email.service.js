@@ -209,7 +209,33 @@ async function sendEmailChangeConfirmation(to, token) {
   });
 }
 
+function passwordResetHtml(resetUrl) {
+  return `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+      <h2 style="color:#38bdf8">Reset your FinTrack password</h2>
+      <p>We received a request to reset your password. Click the button below to choose a new one.</p>
+      <p style="margin:28px 0">
+        <a href="${resetUrl}" style="background:linear-gradient(135deg,#0891b2,#6366f1);color:#fff;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:bold;display:inline-block">
+          Reset password
+        </a>
+      </p>
+      <p style="color:#64748b;font-size:14px">Or copy this link:<br/><a href="${resetUrl}">${resetUrl}</a></p>
+      <p style="color:#64748b;font-size:13px">This link expires in 1 hour. If you didn't request this, ignore this email.</p>
+    </div>
+  `;
+}
+
+async function sendPasswordResetEmail(to, token) {
+  const resetUrl = `${FRONTEND_URL}/reset-password?token=${encodeURIComponent(token)}`;
+  return sendEmail({
+    to,
+    subject: "Reset your FinTrack password",
+    html: passwordResetHtml(resetUrl),
+  });
+}
+
 module.exports = {
   sendVerificationEmail,
   sendEmailChangeConfirmation,
+  sendPasswordResetEmail,
 };

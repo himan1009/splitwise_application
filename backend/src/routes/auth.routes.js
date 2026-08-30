@@ -13,6 +13,8 @@ router.post("/resend-verification/me", auth, authController.resendVerification);
 router.post("/verify-current-email", auth, authController.verifyCurrentEmail);
 router.post("/change-email", auth, authController.requestEmailChange);
 router.post("/cancel-email-change", auth, authController.cancelEmailChange);
+router.post("/forgot-password", authController.forgotPassword);
+router.post("/reset-password", authController.resetPassword);
 router.get("/me", auth, authController.getProfile);
 
 /* delete account */

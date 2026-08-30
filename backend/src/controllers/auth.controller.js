@@ -5,10 +5,12 @@ const { generateToken, hashToken } = require("../utils/tokens");
 const {
   sendVerificationEmail,
   sendEmailChangeConfirmation,
+  sendPasswordResetEmail,
 } = require("../services/email.service");
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
 function normalizeEmail(email) {
   return String(email).trim().toLowerCase();
@@ -311,5 +313,76 @@ exports.cancelEmailChange = async (req, res) => {
     res.json({ message: "Pending email change cancelled" });
   } catch (err) {
     res.status(500).json({ message: "Could not cancel email change" });
+  }
+};
+
+/* ================= FORGOT PASSWORD ================= */
+exports.forgotPassword = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email || "");
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const genericMessage =
+      "If an account exists with that email, a password reset link has been sent.";
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.json({ message: genericMessage });
+    }
+
+    const token = generateToken();
+    user.passwordResetTokenHash = hashToken(token);
+    user.passwordResetTokenExpires = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
+    await user.save();
+
+    try {
+      await sendPasswordResetEmail(user.email, token);
+    } catch (emailErr) {
+      console.error("Password reset email failed:", emailErr);
+      return res.status(500).json({
+        message: "Could not send reset email. Try again in a few minutes.",
+      });
+    }
+
+    res.json({ message: genericMessage });
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    res.status(500).json({ message: "Could not process password reset request" });
+  }
+};
+
+/* ================= RESET PASSWORD ================= */
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({ message: "Token and new password are required" });
+    }
+
+    if (String(password).length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
+    }
+
+    const tokenHash = hashToken(token);
+    const user = await User.findOne({
+      passwordResetTokenHash: tokenHash,
+      passwordResetTokenExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired reset link. Request a new one." });
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    user.passwordResetTokenHash = undefined;
+    user.passwordResetTokenExpires = undefined;
+    await user.save();
+
+    res.json({ message: "Password updated successfully! You can now sign in." });
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.status(500).json({ message: "Could not reset password" });
   }
 };

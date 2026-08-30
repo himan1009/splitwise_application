@@ -28,6 +28,8 @@ const userSchema = new mongoose.Schema(
     },
     emailChangeTokenHash: String,
     emailChangeTokenExpires: Date,
+    passwordResetTokenHash: String,
+    passwordResetTokenExpires: Date,
   },
   { timestamps: true }
 );

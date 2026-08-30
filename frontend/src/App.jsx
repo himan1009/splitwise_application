@@ -7,6 +7,8 @@ import Register from "./pages/Register";
 import CheckEmail from "./pages/CheckEmail";
 import VerifyEmail from "./pages/VerifyEmail";
 import ConfirmEmailChange from "./pages/ConfirmEmailChange";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import AccountSettings from "./pages/AccountSettings";
 import MonthlyTracker from "./pages/MonthlyTracker";
 import Groups from "./pages/Groups";
@@ -40,6 +42,15 @@ export default function App() {
           </GuestRoute>
         }
       />
+      <Route
+        path="/forgot-password"
+        element={
+          <GuestRoute>
+            <ForgotPassword />
+          </GuestRoute>
+        }
+      />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/check-email" element={<CheckEmail />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />

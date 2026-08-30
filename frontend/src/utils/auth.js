@@ -35,7 +35,9 @@ export function getSafeReturnPath(path) {
     path.startsWith("/register") ||
     path.startsWith("/check-email") ||
     path.startsWith("/verify-email") ||
-    path.startsWith("/confirm-email-change")
+    path.startsWith("/confirm-email-change") ||
+    path.startsWith("/forgot-password") ||
+    path.startsWith("/reset-password")
   ) {
     return "/tracker";
   }

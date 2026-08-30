@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api from "../api/api";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import SlowLoadHint from "../components/ui/SlowLoadHint";
 import { getApiErrorMessage } from "../utils/apiErrors";
 import { getSafeReturnPath } from "../utils/auth";
@@ -14,8 +14,17 @@ export default function Login({ setIsAuthenticated }) {
   const [resendLoading, setResendLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState(null);
+  const [successMsg, setSuccessMsg] = useState("");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.resetSuccess) {
+      setSuccessMsg(location.state.resetSuccess);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -148,6 +157,12 @@ export default function Login({ setIsAuthenticated }) {
               <p className="login-form-sub">Enter your email and password below</p>
             </div>
 
+            {successMsg && (
+              <div className="login-success">
+                <span>✓</span> {successMsg}
+              </div>
+            )}
+
             {error && (
               <div className="login-error">
                 <span>✕</span> {error}
@@ -186,7 +201,16 @@ export default function Login({ setIsAuthenticated }) {
               </div>
 
               <div className={`login-field ${focused === "password" ? "login-field-active" : ""}`}>
-                <label>Password</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label>Password</label>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/forgot-password")}
+                    className="text-xs text-cyan-400 hover:text-cyan-300"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
                 <input
                   type="password"
                   placeholder="••••••••"
