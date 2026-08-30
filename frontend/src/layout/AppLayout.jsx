@@ -1,6 +1,8 @@
 import { Outlet, useNavigate, NavLink, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import Footer from "../components/Footer";
-import { getStoredUser, clearSession } from "../utils/auth";
+import api from "../api/api";
+import { getStoredUser, clearSession, updateStoredUser } from "../utils/auth";
 
 const NAV_ITEMS = [
   { to: "/tracker", label: "Tracker", icon: "📊", paths: ["/tracker"] },
@@ -15,7 +17,17 @@ function isNavActive(pathname, paths) {
 export default function AppLayout({ setIsAuthenticated }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = getStoredUser();
+  const [user, setUser] = useState(getStoredUser());
+
+  useEffect(() => {
+    api
+      .get("/auth/me")
+      .then((res) => {
+        setUser(res.data.user);
+        updateStoredUser(res.data.user);
+      })
+      .catch(() => {});
+  }, []);
 
   const logout = () => {
     clearSession();
@@ -60,13 +72,23 @@ export default function AppLayout({ setIsAuthenticated }) {
             </nav>
 
             <div className="flex items-center gap-2">
-              <div className="hidden lg:block text-right">
+              <button
+                type="button"
+                onClick={() => navigate("/account")}
+                className="hidden lg:block text-right touch-target"
+                aria-label="Account settings"
+              >
                 <p className="text-sm font-semibold text-slate-200">{user?.name}</p>
                 <p className="text-xs text-slate-500">{user?.email}</p>
-              </div>
-              <div className="app-avatar hidden sm:flex">
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/account")}
+                className="app-avatar hidden sm:flex touch-target"
+                aria-label="Account settings"
+              >
                 {user?.name?.charAt(0)?.toUpperCase() || "?"}
-              </div>
+              </button>
               <button
                 type="button"
                 onClick={logout}
@@ -80,6 +102,25 @@ export default function AppLayout({ setIsAuthenticated }) {
           </div>
         </div>
       </header>
+
+      {user?.needsEmailAttention && location.pathname !== "/account" && (
+        <div className="bg-amber-500/10 border-b border-amber-500/25 px-4 py-2.5">
+          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
+            <p className="text-amber-200">
+              {user.pendingEmail
+                ? `Confirm your new email (${user.pendingEmail}) from your inbox.`
+                : "Add or verify a real email so you can recover your account."}
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate("/account")}
+              className="text-amber-300 font-semibold hover:text-amber-200 shrink-0 text-left sm:text-right"
+            >
+              Account settings →
+            </button>
+          </div>
+        </div>
+      )}
 
       <main className="app-main app-main-with-nav">
         <Outlet />

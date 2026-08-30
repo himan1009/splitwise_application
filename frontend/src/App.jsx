@@ -4,6 +4,10 @@ import { hasStoredSession } from "./utils/auth";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import CheckEmail from "./pages/CheckEmail";
+import VerifyEmail from "./pages/VerifyEmail";
+import ConfirmEmailChange from "./pages/ConfirmEmailChange";
+import AccountSettings from "./pages/AccountSettings";
 import MonthlyTracker from "./pages/MonthlyTracker";
 import Groups from "./pages/Groups";
 import Debts from "./pages/Debts";
@@ -36,6 +40,9 @@ export default function App() {
           </GuestRoute>
         }
       />
+      <Route path="/check-email" element={<CheckEmail />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
       <Route path="/" element={<RootRedirect isAuthenticated={isAuthenticated} />} />
 
       <Route
@@ -53,6 +60,10 @@ export default function App() {
         <Route path="/group/:groupId" element={<GroupDetails />} />
         <Route path="/add-debt" element={<AddDebt />} />
         <Route path="/debt/:userId" element={<DebtDetails />} />
+        <Route
+          path="/account"
+          element={<AccountSettings setIsAuthenticated={setIsAuthenticated} />}
+        />
       </Route>
 
       <Route path="*" element={<NotFoundRedirect />} />

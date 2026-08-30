@@ -9,6 +9,9 @@ export default function Login({ setIsAuthenticated }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [unverifiedEmail, setUnverifiedEmail] = useState("");
+  const [resendMsg, setResendMsg] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState(null);
   const navigate = useNavigate();
@@ -17,6 +20,8 @@ export default function Login({ setIsAuthenticated }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setUnverifiedEmail("");
+    setResendMsg("");
     setLoading(true);
 
     try {
@@ -28,12 +33,36 @@ export default function Login({ setIsAuthenticated }) {
       localStorage.setItem("user", JSON.stringify(user));
 
       setIsAuthenticated(true);
+      if (user.needsEmailAttention) {
+        navigate("/account", { replace: true, state: { emailPrompt: true } });
+        return;
+      }
       const returnTo = getSafeReturnPath(searchParams.get("returnTo"));
       navigate(returnTo, { replace: true });
     } catch (err) {
-      setError(getApiErrorMessage(err, "Login failed"));
+      if (err.response?.status === 403 && err.response?.data?.code === "EMAIL_NOT_VERIFIED") {
+        setUnverifiedEmail(err.response.data.email || email);
+        setError(err.response.data.message);
+      } else {
+        setError(getApiErrorMessage(err, "Login failed"));
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    const targetEmail = unverifiedEmail || email;
+    if (!targetEmail) return;
+    setResendLoading(true);
+    setResendMsg("");
+    try {
+      const res = await api.post("/auth/resend-verification", { email: targetEmail });
+      setResendMsg(res.data.message);
+    } catch (err) {
+      setResendMsg(getApiErrorMessage(err, "Could not resend email"));
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -122,6 +151,22 @@ export default function Login({ setIsAuthenticated }) {
             {error && (
               <div className="login-error">
                 <span>✕</span> {error}
+              </div>
+            )}
+
+            {unverifiedEmail && (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resendLoading}
+                  className="btn-secondary w-full !text-sm"
+                >
+                  {resendLoading ? "Sending..." : "Resend verification email"}
+                </button>
+                {resendMsg && (
+                  <p className="text-xs text-center text-emerald-400">{resendMsg}</p>
+                )}
               </div>
             )}
 

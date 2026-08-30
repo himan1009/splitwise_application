@@ -6,6 +6,14 @@ const auth = require("../middleware/auth");
 
 router.post("/register", authController.register);
 router.post("/login", authController.login);
+router.get("/verify-email", authController.verifyEmail);
+router.get("/confirm-email-change", authController.confirmEmailChange);
+router.post("/resend-verification", authController.resendVerification);
+router.post("/resend-verification/me", auth, authController.resendVerification);
+router.post("/verify-current-email", auth, authController.verifyCurrentEmail);
+router.post("/change-email", auth, authController.requestEmailChange);
+router.post("/cancel-email-change", auth, authController.cancelEmailChange);
+router.get("/me", auth, authController.getProfile);
 
 /* delete account */
 router.delete("/delete-account", auth, async (req, res) => {

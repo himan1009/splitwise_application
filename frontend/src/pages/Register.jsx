@@ -21,9 +21,9 @@ export default function Register() {
     setLoading(true);
 
     try {
-      await api.post("/auth/register", { name, email, password });
-      setMsg("Account created! Redirecting to login...");
-      setTimeout(() => navigate("/login"), 1500);
+      const res = await api.post("/auth/register", { name, email, password });
+      const registeredEmail = res.data?.email || email;
+      navigate(`/check-email?email=${encodeURIComponent(registeredEmail)}`, { replace: true });
     } catch (err) {
       setIsError(true);
       setMsg(err.response?.data?.message || getApiErrorMessage(err, "Registration failed"));
@@ -92,13 +92,13 @@ export default function Register() {
                 <label>Password</label>
                 <input
                   type="password"
-                  placeholder="Min. 6 characters"
+                  placeholder="Min. 8 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onFocus={() => setFocused("password")}
                   onBlur={() => setFocused(null)}
                   required
-                  minLength={6}
+                  minLength={8}
                 />
               </div>
 
