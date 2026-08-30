@@ -2,6 +2,26 @@ const nodemailer = require("nodemailer");
 
 const FRONTEND_URL = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
 
+function getSenderEmail() {
+  return (
+    process.env.BREVO_SENDER_EMAIL ||
+    process.env.SMTP_USER ||
+    process.env.EMAIL_FROM?.match(/<([^>]+)>/)?.[1] ||
+    null
+  );
+}
+
+function getSenderName() {
+  return process.env.BREVO_SENDER_NAME || "FinTrack";
+}
+
+function getEmailFrom() {
+  if (process.env.EMAIL_FROM) return process.env.EMAIL_FROM;
+  const sender = getSenderEmail();
+  if (sender) return `${getSenderName()} <${sender}>`;
+  return "FinTrack <onboarding@resend.dev>";
+}
+
 function getSmtpConfig() {
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
@@ -12,20 +32,58 @@ function getSmtpConfig() {
     port: Number(process.env.SMTP_PORT || 587),
     secure: process.env.SMTP_SECURE === "true",
     auth: { user, pass },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   };
 }
 
-function getEmailFrom() {
-  if (process.env.EMAIL_FROM) return process.env.EMAIL_FROM;
-  if (process.env.SMTP_USER) return `FinTrack <${process.env.SMTP_USER}>`;
-  return "FinTrack <onboarding@resend.dev>";
+let smtpTransporter = null;
+
+function getSmtpTransporter() {
+  const config = getSmtpConfig();
+  if (!config) return null;
+  if (!smtpTransporter) {
+    smtpTransporter = nodemailer.createTransport(config);
+  }
+  return smtpTransporter;
+}
+
+async function sendViaBrevo({ to, subject, html }) {
+  const apiKey = process.env.BREVO_API_KEY;
+  const senderEmail = getSenderEmail();
+  if (!apiKey || !senderEmail) return null;
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": apiKey,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: getSenderName(), email: senderEmail },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    console.error("[email] Brevo error:", data);
+    const detail = data?.message || data?.code || "Failed to send email";
+    throw new Error(detail);
+  }
+
+  return { ok: true, id: data.messageId, provider: "brevo" };
 }
 
 async function sendViaSmtp({ to, subject, html }) {
-  const config = getSmtpConfig();
-  if (!config) return null;
+  const transporter = getSmtpTransporter();
+  if (!transporter) return null;
 
-  const transporter = nodemailer.createTransport(config);
   const info = await transporter.sendMail({
     from: getEmailFrom(),
     to,
@@ -65,21 +123,35 @@ async function sendViaResend({ to, subject, html }) {
 }
 
 async function sendEmail({ to, subject, html }) {
-  // Gmail SMTP — sends to ANY email, no domain needed (best for indie apps)
+  // Brevo HTTP API — works on Render FREE tier (no SMTP ports needed)
   try {
-    const smtpResult = await sendViaSmtp({ to, subject, html });
-    if (smtpResult) return smtpResult;
+    const brevoResult = await sendViaBrevo({ to, subject, html });
+    if (brevoResult) return brevoResult;
   } catch (err) {
-    console.error("[email] SMTP error:", err.message);
+    console.error("[email] Brevo error:", err.message);
     throw err;
   }
 
-  // Resend — only works for all users after you verify a custom domain
+  // Resend HTTP API — needs verified domain to email anyone
   try {
     const resendResult = await sendViaResend({ to, subject, html });
     if (resendResult) return resendResult;
   } catch (err) {
     console.error("[email] Resend error:", err.message);
+    throw err;
+  }
+
+  // Gmail SMTP — works locally or on PAID Render only (free tier blocks port 587)
+  try {
+    const smtpResult = await sendViaSmtp({ to, subject, html });
+    if (smtpResult) return smtpResult;
+  } catch (err) {
+    console.error("[email] SMTP error:", err.message);
+    if (err.code === "ETIMEDOUT" || err.code === "ESOCKET") {
+      throw new Error(
+        "SMTP blocked by hosting provider. Use BREVO_API_KEY on Render free tier instead of Gmail SMTP."
+      );
+    }
     throw err;
   }
 

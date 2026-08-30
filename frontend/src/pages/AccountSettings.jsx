@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../api/api";
+import SlowLoadHint from "../components/ui/SlowLoadHint";
 import { getStoredUser, clearSession } from "../utils/auth";
 import { getApiErrorMessage } from "../utils/apiErrors";
 
@@ -165,6 +166,11 @@ export default function AccountSettings({ setIsAuthenticated }) {
           <button type="submit" disabled={loading || !newEmail} className="btn-primary w-full">
             {loading ? "Sending..." : "Send confirmation to new email"}
           </button>
+          <SlowLoadHint
+            active={loading}
+            compact
+            message="Sending email… First request after idle can take 30–60s while the server wakes up."
+          />
         </form>
       </div>
 
