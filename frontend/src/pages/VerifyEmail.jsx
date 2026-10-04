@@ -35,7 +35,7 @@ export default function VerifyEmail() {
       <div className="login-shell login-shell-single">
         <div className="login-panel">
           <div className="login-form-wrap text-center">
-            <p className="text-4xl mb-4">{status === "loading" ? "⏳" : status === "success" ? "✅" : "❌"}</p>
+            <p className="text-4xl mb-4">{status === "loading" ? "…" : status === "success" ? "Done" : "Failed"}</p>
             <h2 className="login-form-title">
               {status === "loading" ? "Verifying..." : status === "success" ? "Email verified!" : "Verification failed"}
             </h2>

@@ -37,13 +37,13 @@ export default function ConfirmEmailChange() {
       <div className="login-shell login-shell-single">
         <div className="login-panel">
           <div className="login-form-wrap text-center">
-            <p className="text-4xl mb-4">{status === "loading" ? "⏳" : status === "success" ? "✅" : "❌"}</p>
+            <p className="text-4xl mb-4">{status === "loading" ? "…" : status === "success" ? "Done" : "Failed"}</p>
             <h2 className="login-form-title">
               {status === "loading" ? "Confirming..." : status === "success" ? "Email updated!" : "Update failed"}
             </h2>
             <p className="login-form-sub mt-3">{status === "loading" ? "Please wait." : message}</p>
             {newEmail && status === "success" && (
-              <p className="text-sm text-cyan-400 mt-2">New email: {newEmail}</p>
+              <p className="text-emerald-400 mt-2">New email: {newEmail}</p>
             )}
             {status !== "loading" && (
               <button type="button" onClick={() => navigate("/login")} className="login-submit w-full mt-8">

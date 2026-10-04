@@ -46,11 +46,10 @@ export default function ResetPassword() {
   if (!token) {
     return (
       <div className="login-world">
-        <div className="login-grid" />
+        <div className="login-noise" />
         <div className="login-shell login-shell-single">
           <div className="login-panel">
             <div className="login-form-wrap text-center">
-              <p className="text-4xl mb-4">❌</p>
               <h2 className="login-form-title">Invalid reset link</h2>
               <p className="login-form-sub mt-3">This link is missing or broken. Request a new reset email.</p>
               <button type="button" onClick={() => navigate("/forgot-password")} className="login-submit w-full mt-8">
@@ -65,7 +64,7 @@ export default function ResetPassword() {
 
   return (
     <div className="login-world">
-      <div className="login-grid" />
+      <div className="login-noise" />
       <div className="login-shell login-shell-single">
         <div className="login-panel">
           <div className="login-form-wrap">

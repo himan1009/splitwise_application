@@ -112,11 +112,11 @@ export default function AccountSettings({ setIsAuthenticated }) {
         </div>
 
         {profile.pendingEmail && (
-          <div className="rounded-xl border border-cyan-500/25 bg-cyan-500/10 p-4 text-sm text-cyan-200">
+          <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">
             <p>
               Pending change to <strong>{profile.pendingEmail}</strong>. Check that inbox for the confirmation link.
             </p>
-            <button type="button" onClick={handleCancelPending} className="btn-ghost !text-cyan-300 mt-3 !text-xs">
+            <button type="button" onClick={handleCancelPending} className="btn-ghost !text-emerald-300 mt-3 !text-xs">
               Cancel pending change
             </button>
           </div>

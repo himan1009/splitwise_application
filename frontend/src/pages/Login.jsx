@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import SlowLoadHint from "../components/ui/SlowLoadHint";
 import { getApiErrorMessage } from "../utils/apiErrors";
 import { getSafeReturnPath } from "../utils/auth";
+import { BrandMark } from "../components/ui/Icons";
 
 export default function Login({ setIsAuthenticated }) {
   const [email, setEmail] = useState("");
@@ -77,25 +78,14 @@ export default function Login({ setIsAuthenticated }) {
 
   return (
     <div className="login-world">
-      {/* Animated background layers */}
-      <div className="login-grid" />
-      <div className="login-aurora login-aurora-1" />
-      <div className="login-aurora login-aurora-2" />
-      <div className="login-aurora login-aurora-3" />
       <div className="login-noise" />
 
-      {/* Floating orbs */}
-      <div className="login-orb login-orb-1" />
-      <div className="login-orb login-orb-2" />
-      <div className="login-orb login-orb-3" />
-
       <div className="login-shell">
-        {/* Left — brand experience */}
         <div className="login-hero">
           <div className="login-hero-inner">
             <div className="login-badge">
               <span className="login-badge-dot" />
-              Your money, decoded
+              Personal finance, kept simple
             </div>
 
             <h1 className="login-title">
@@ -104,17 +94,17 @@ export default function Login({ setIsAuthenticated }) {
             </h1>
 
             <p className="login-tagline">
-              The smarter way to track spending, split bills, and stay in control of your finances.
+              Track spending, split group bills, and settle personal debts — all in one calm workspace.
             </p>
 
             <div className="login-features">
               {[
-                { icon: "📊", label: "Monthly tracking", sub: "Salary to daily spends" },
-                { icon: "👥", label: "Group splitting", sub: "Trips & shared costs" },
-                { icon: "📈", label: "Smart reports", sub: "See where money goes" },
+                { label: "Monthly tracker", sub: "Income, expenses, and day-by-day cash flow" },
+                { label: "Group splits", sub: "Trips and shared costs without the spreadsheet" },
+                { label: "Personal debts", sub: "Who owes whom, with a clear settlement trail" },
               ].map((f) => (
                 <div key={f.label} className="login-feature-card">
-                  <span className="login-feature-icon">{f.icon}</span>
+                  <span className="login-feature-icon">•</span>
                   <div>
                     <p className="login-feature-label">{f.label}</p>
                     <p className="login-feature-sub">{f.sub}</p>
@@ -126,26 +116,27 @@ export default function Login({ setIsAuthenticated }) {
             <div className="login-stats">
               <div className="login-stat">
                 <span className="login-stat-num">₹</span>
-                <span className="login-stat-label">INR native</span>
+                <span className="login-stat-label">INR first</span>
               </div>
               <div className="login-stat-divider" />
               <div className="login-stat">
-                <span className="login-stat-num">24/7</span>
-                <span className="login-stat-label">Your dashboard</span>
+                <span className="login-stat-num">3</span>
+                <span className="login-stat-label">Money views</span>
               </div>
               <div className="login-stat-divider" />
               <div className="login-stat">
-                <span className="login-stat-num">∞</span>
-                <span className="login-stat-label">Entries</span>
+                <span className="login-stat-num">Private</span>
+                <span className="login-stat-label">Your data</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right — login form */}
         <div className="login-panel">
           <div className="login-mobile-brand">
-            <span className="login-mobile-brand-icon">💸</span>
+            <span className="login-mobile-brand-icon">
+              <BrandMark size={32} />
+            </span>
             <span className="login-mobile-brand-text">FinTrack</span>
           </div>
           <div className="login-panel-glow" />
@@ -206,7 +197,7 @@ export default function Login({ setIsAuthenticated }) {
                   <button
                     type="button"
                     onClick={() => navigate("/forgot-password")}
-                    className="text-xs text-cyan-400 hover:text-cyan-300"
+                    className="text-xs text-emerald-400 hover:text-emerald-300"
                   >
                     Forgot password?
                   </button>

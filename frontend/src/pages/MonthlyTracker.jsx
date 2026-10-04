@@ -26,6 +26,7 @@ import {
   buildIncomeByCategory,
   buildIncomeCategoryAnalytics,
 } from "../utils/categoryAnalytics";
+import { IconCalendar, IconChart, IconList, IconTag } from "../components/ui/Icons";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -194,22 +195,15 @@ export default function MonthlyTracker() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="metric-card" style={{ background: "linear-gradient(135deg, #10b981, #14b8a6)" }}>
-          <p className="metric-label">Total Income</p>
+        <div className="metric-card metric-card-income">
+          <p className="metric-label">Income</p>
           <p className="metric-value">{formatCurrency(summary?.totalIncome ?? 0)}</p>
         </div>
-        <div className="metric-card" style={{ background: "linear-gradient(135deg, #f43f5e, #ef4444)" }}>
-          <p className="metric-label">Total Spent</p>
+        <div className="metric-card metric-card-expense">
+          <p className="metric-label">Spent</p>
           <p className="metric-value">{formatCurrency(summary?.totalExpenses ?? 0)}</p>
         </div>
-        <div
-          className="metric-card"
-          style={{
-            background: balance >= 0
-              ? "linear-gradient(135deg, #6366f1, #8b5cf6)"
-              : "linear-gradient(135deg, #f59e0b, #f97316)",
-          }}
-        >
+        <div className={`metric-card ${balance >= 0 ? "metric-card-balance" : "metric-card-expense"}`}>
           <p className="metric-label">Remaining</p>
           <p className="metric-value">{formatCurrency(balance)}</p>
         </div>
@@ -229,7 +223,7 @@ export default function MonthlyTracker() {
                   ? "bg-gradient-to-r from-red-500 to-rose-500"
                   : spentPct > 70
                   ? "bg-gradient-to-r from-amber-400 to-orange-500"
-                  : "bg-gradient-to-r from-cyan-500 to-violet-500"
+                  : "bg-[#1d9e75]"
               }`}
               style={{ width: `${spentPct}%` }}
             />
@@ -240,17 +234,20 @@ export default function MonthlyTracker() {
       {/* View toggle */}
       <div className="view-tabs-wrap">
         {[
-          { id: "reports", label: "📊 Reports" },
-          { id: "calendar", label: "📅 Calendar" },
-          { id: "list", label: "📋 Transactions" },
-          { id: "categories", label: "🏷️ Categories" },
+          { id: "reports", label: "Reports", Icon: IconChart },
+          { id: "calendar", label: "Calendar", Icon: IconCalendar },
+          { id: "list", label: "Transactions", Icon: IconList },
+          { id: "categories", label: "Categories", Icon: IconTag },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setView(tab.id)}
             className={view === tab.id ? "view-tab view-tab-active" : "view-tab view-tab-inactive"}
           >
-            {tab.label}
+            <span className="inline-flex items-center gap-2">
+              <tab.Icon className="w-4 h-4" />
+              {tab.label}
+            </span>
           </button>
         ))}
       </div>

@@ -31,12 +31,12 @@ export default function CheckEmail() {
 
   return (
     <div className="login-world">
-      <div className="login-grid" />
+      <div className="login-noise" />
       <div className="login-shell login-shell-single">
         <div className="login-panel">
           <div className="login-form-wrap">
             <div className="login-form-header">
-              <p className="text-4xl mb-3">📧</p>
+              <p className="login-form-eyebrow">Inbox</p>
               <h2 className="login-form-title">Check your email</h2>
               <p className="login-form-sub">
                 We sent a verification link to{" "}
@@ -59,7 +59,7 @@ export default function CheckEmail() {
 
             <p className="text-xs text-dim text-center mt-6">
               Used a wrong email?{" "}
-              <Link to="/register" className="text-cyan-400 hover:text-cyan-300">
+              <Link to="/register" className="text-emerald-400 hover:text-emerald-300">
                 Register again
               </Link>{" "}
               with the correct one.

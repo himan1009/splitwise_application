@@ -25,7 +25,7 @@ export default function Footer({ setIsAuthenticated }) {
     <footer className="app-footer mt-auto">
       <div className="app-footer-inner max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center gap-3">
         <p className="text-xs text-slate-500 font-medium shrink-0">
-          © {new Date().getFullYear()} FinTrack
+          FinTrack
         </p>
         <button
           onClick={deleteAccount}

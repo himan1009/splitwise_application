@@ -29,7 +29,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="login-world">
-      <div className="login-grid" />
+      <div className="login-noise" />
       <div className="login-shell login-shell-single">
         <div className="login-panel">
           <div className="login-form-wrap">

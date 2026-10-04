@@ -3,6 +3,7 @@ import api from "../api/api";
 import { useNavigate } from "react-router-dom";
 import SlowLoadHint from "../components/ui/SlowLoadHint";
 import { getApiErrorMessage } from "../utils/apiErrors";
+import { BrandMark } from "../components/ui/Icons";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -34,18 +35,14 @@ export default function Register() {
 
   return (
     <div className="login-world">
-      <div className="login-grid" />
-      <div className="login-aurora login-aurora-1" />
-      <div className="login-aurora login-aurora-2" />
-      <div className="login-aurora login-aurora-3" />
       <div className="login-noise" />
-      <div className="login-orb login-orb-1" />
-      <div className="login-orb login-orb-2" />
 
       <div className="login-shell login-shell-single">
         <div className="login-panel">
           <div className="login-mobile-brand">
-            <span className="login-mobile-brand-icon">💸</span>
+            <span className="login-mobile-brand-icon">
+              <BrandMark size={32} />
+            </span>
             <span className="login-mobile-brand-text">FinTrack</span>
           </div>
           <div className="login-panel-glow" />

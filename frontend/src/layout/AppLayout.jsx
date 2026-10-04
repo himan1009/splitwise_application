@@ -3,11 +3,12 @@ import { useEffect, useState } from "react";
 import Footer from "../components/Footer";
 import api from "../api/api";
 import { getStoredUser, clearSession, updateStoredUser } from "../utils/auth";
+import { BrandMark, IconTracker, IconGroups, IconDebts } from "../components/ui/Icons";
 
 const NAV_ITEMS = [
-  { to: "/tracker", label: "Tracker", icon: "📊", paths: ["/tracker"] },
-  { to: "/groups", label: "Groups", icon: "👥", paths: ["/groups", "/group", "/create-group"] },
-  { to: "/debts", label: "Debts", icon: "🤝", paths: ["/debts", "/debt", "/add-debt"] },
+  { to: "/tracker", label: "Tracker", Icon: IconTracker, paths: ["/tracker"] },
+  { to: "/groups", label: "Groups", Icon: IconGroups, paths: ["/groups", "/group", "/create-group"] },
+  { to: "/debts", label: "Debts", Icon: IconDebts, paths: ["/debts", "/debt", "/add-debt"] },
 ];
 
 function isNavActive(pathname, paths) {
@@ -37,11 +38,6 @@ export default function AppLayout({ setIsAuthenticated }) {
 
   return (
     <div className="app-shell">
-      <div className="app-bg-grid" />
-      <div className="app-bg-aurora app-bg-aurora-1" />
-      <div className="app-bg-aurora app-bg-aurora-2" />
-      <div className="app-bg-aurora app-bg-aurora-3" />
-
       <header className="app-header safe-top">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14 sm:h-16">
@@ -50,7 +46,7 @@ export default function AppLayout({ setIsAuthenticated }) {
               className="flex items-center gap-2.5 group shrink-0 touch-target"
               type="button"
             >
-              <div className="app-logo-icon">💸</div>
+              <BrandMark size={32} />
               <span className="app-logo-text">FinTrack</span>
             </button>
 
@@ -65,7 +61,7 @@ export default function AppLayout({ setIsAuthenticated }) {
                       : "nav-pill-inactive nav-pill"
                   }
                 >
-                  <span>{item.icon}</span>
+                  <item.Icon className="w-4 h-4" />
                   {item.label}
                 </NavLink>
               ))}
@@ -95,8 +91,7 @@ export default function AppLayout({ setIsAuthenticated }) {
                 className="btn-ghost !px-3 text-xs sm:text-sm touch-target min-h-[44px]"
                 aria-label="Logout"
               >
-                <span className="sm:hidden">Logout</span>
-                <span className="hidden sm:inline">Logout</span>
+                Log out
               </button>
             </div>
           </div>
@@ -104,19 +99,19 @@ export default function AppLayout({ setIsAuthenticated }) {
       </header>
 
       {user?.needsEmailAttention && location.pathname !== "/account" && (
-        <div className="bg-amber-500/10 border-b border-amber-500/25 px-4 py-2.5">
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5">
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
-            <p className="text-amber-200">
+            <p className="text-amber-100">
               {user.pendingEmail
                 ? `Confirm your new email (${user.pendingEmail}) from your inbox.`
-                : "Add or verify a real email so you can recover your account."}
+                : "Add a real email so you can recover this account."}
             </p>
             <button
               type="button"
               onClick={() => navigate("/account")}
-              className="text-amber-300 font-semibold hover:text-amber-200 shrink-0 text-left sm:text-right"
+              className="text-amber-200 font-semibold hover:text-white shrink-0 text-left sm:text-right"
             >
-              Account settings →
+              Open account
             </button>
           </div>
         </div>
@@ -138,7 +133,7 @@ export default function AppLayout({ setIsAuthenticated }) {
             }`}
           >
             <span className="mobile-nav-icon" aria-hidden="true">
-              {item.icon}
+              <item.Icon className="w-5 h-5" />
             </span>
             <span className="mobile-nav-label">{item.label}</span>
           </NavLink>

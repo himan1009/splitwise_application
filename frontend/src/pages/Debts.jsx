@@ -98,9 +98,7 @@ export default function Debts() {
 
       {activeDebts.length > 0 && (
         <div className="card">
-          <h2 className="section-title mb-5 flex items-center gap-2">
-            <span>🤝</span> Active Balances
-          </h2>
+          <h2 className="section-title mb-5">Active balances</h2>
           <div className="space-y-3">
             {activeDebts.map((p) => (
               <DebtBalanceRow
@@ -116,9 +114,7 @@ export default function Debts() {
 
       {settledDebts.length > 0 && (
         <div className="card">
-          <h2 className="section-title mb-2 flex items-center gap-2">
-            <span>✅</span> Settled — View History
-          </h2>
+          <h2 className="section-title mb-2">Settled</h2>
           <p className="text-sm text-dim mb-5">
             These people are fully settled. Tap to see full loan & payment history.
           </p>
@@ -139,7 +135,7 @@ export default function Debts() {
                     <p className="debt-balance-status">Settled up · {p.txCount} transactions</p>
                   </div>
                 </div>
-                <span className="text-xs font-semibold text-cyan-400">View history →</span>
+                <span className="text-xs font-semibold text-emerald-400">View history</span>
               </button>
             ))}
           </div>

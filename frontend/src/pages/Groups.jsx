@@ -49,19 +49,16 @@ export default function Groups() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="metric-card" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
-          <p className="metric-label">Your Groups</p>
+        <div className="metric-card">
+          <p className="metric-label">Your groups</p>
           <p className="metric-value">{groups.length}</p>
         </div>
-        <div className="metric-card" style={{ background: "linear-gradient(135deg, #0891b2, #06b6d4)" }}>
-          <p className="metric-label">Total Members</p>
+        <div className="metric-card">
+          <p className="metric-label">People across groups</p>
           <p className="metric-value">{totalMembers}</p>
         </div>
-        <div
-          className="metric-card"
-          style={{ background: "linear-gradient(135deg, #475569, #334155)" }}
-        >
-          <p className="metric-label">Use case</p>
+        <div className="metric-card">
+          <p className="metric-label">Best for</p>
           <p className="metric-value text-base sm:text-lg">Trips & shared costs</p>
         </div>
       </div>
@@ -77,9 +74,8 @@ export default function Groups() {
 
       {!loadError && groups.length === 0 ? (
         <div className="empty-state">
-          <p className="text-5xl mb-3">✈️</p>
-          <p className="text-slate-300 font-semibold">No groups yet</p>
-          <p className="text-sm text-dim mt-1">Create a group for your next trip or outing</p>
+          <p className="text-slate-300 font-semibold text-lg">No groups yet</p>
+          <p className="text-sm text-dim mt-1">Create a group for a trip, rent, or a dinner out.</p>
           <button onClick={() => navigate("/create-group")} className="btn-primary mt-6">
             Create your first group
           </button>
@@ -94,12 +90,12 @@ export default function Groups() {
             >
               <div className="flex items-start justify-between gap-2">
                 <h3
-                  className="font-bold text-slate-200 group-hover:text-cyan-400 transition"
+                  className="font-bold text-slate-200 group-hover:text-emerald-400 transition"
                   style={{ fontFamily: "Outfit, sans-serif" }}
                 >
                   {g.name}
                 </h3>
-                <span className="text-xs bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-semibold px-2.5 py-1 rounded-lg shrink-0">
+                <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold px-2.5 py-1 rounded-lg shrink-0">
                   {g.members.length}
                 </span>
               </div>
@@ -119,8 +115,8 @@ export default function Groups() {
                 )}
               </div>
 
-              <p className="text-sm text-cyan-400/80 font-semibold mt-4 group-hover:translate-x-1 transition-transform">
-                View details →
+              <p className="text-sm text-emerald-400/80 font-semibold mt-4 group-hover:translate-x-1 transition-transform">
+                Open group
               </p>
             </div>
           ))}
