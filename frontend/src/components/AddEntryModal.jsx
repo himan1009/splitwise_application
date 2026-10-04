@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../api/api";
 import Modal from "./ui/Modal";
 import SlowLoadHint from "./ui/SlowLoadHint";
 import DateTimeFields from "./DateTimeFields";
 import AmountInput from "./AmountInput";
-import { getCategoryMeta } from "../constants/categories";
+import {
+  EXPENSE_CATEGORY_IDS,
+  INCOME_CATEGORY_IDS,
+  getCategoryMeta,
+} from "../constants/categories";
 import {
   combineDateAndTime,
   getNowDateString,
@@ -21,47 +25,76 @@ export default function AddEntryModal({ open, onClose, onSuccess, defaultDate, e
   const [time, setTime] = useState(getNowTimeString());
   const [category, setCategory] = useState("");
   const [message, setMessage] = useState("");
-  const [categories, setCategories] = useState({ expense: [], income: [] });
+  const [categoryQuery, setCategoryQuery] = useState("");
+  const [categories, setCategories] = useState({
+    expense: EXPENSE_CATEGORY_IDS,
+    income: INCOME_CATEGORY_IDS,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const resolveList = (list, fallback) =>
+    Array.isArray(list) && list.length ? list : fallback;
+
+  const pickCategory = (desired, list) => {
+    if (desired && list.includes(desired)) return desired;
+    return list[0] || "other";
+  };
+
+  const hydrateForm = (lists) => {
+    if (entry) {
+      const parts = splitDateTime(entry.date);
+      const nextType = entry.type === "income" ? "income" : "expense";
+      const list = nextType === "income" ? lists.income : lists.expense;
+      setType(nextType);
+      setAmount(String(entry.amount ?? ""));
+      setDate(parts.date);
+      setTime(parts.time);
+      setMessage(entry.message || "");
+      setCategory(pickCategory(entry.category, list));
+      return;
+    }
+
+    const parts = defaultDate
+      ? splitDateTime(`${defaultDate}T12:00:00`)
+      : { date: getNowDateString(), time: getNowTimeString() };
+    setType("expense");
+    setAmount("");
+    setMessage("");
+    setDate(parts.date);
+    setTime(parts.time);
+    setCategory(pickCategory("", lists.expense));
+  };
 
   useEffect(() => {
     if (!open) return;
 
     let cancelled = false;
+    const fallbackLists = {
+      expense: EXPENSE_CATEGORY_IDS,
+      income: INCOME_CATEGORY_IDS,
+    };
+
     setError("");
+    setCategoryQuery("");
+    setCategories(fallbackLists);
+    hydrateForm(fallbackLists);
 
     api
       .get("/personal/categories")
       .then((res) => {
         if (cancelled) return;
-
-        setCategories(res.data);
-
-        if (entry) {
-          const parts = splitDateTime(entry.date);
-          setType(entry.type);
-          setAmount(String(entry.amount));
-          setDate(parts.date);
-          setTime(parts.time);
-          setCategory(entry.category);
-          setMessage(entry.message || "");
-        } else {
-          const parts = defaultDate
-            ? splitDateTime(`${defaultDate}T12:00:00`)
-            : { date: getNowDateString(), time: getNowTimeString() };
-          setType("expense");
-          setAmount("");
-          setMessage("");
-          setDate(parts.date);
-          setTime(parts.time);
-          setCategory(res.data.expense[0] || "");
-        }
+        const lists = {
+          expense: resolveList(res.data?.expense, EXPENSE_CATEGORY_IDS),
+          income: resolveList(res.data?.income, INCOME_CATEGORY_IDS),
+        };
+        setCategories(lists);
+        hydrateForm(lists);
       })
       .catch(() => {
-        if (!cancelled) {
-          setError("Could not load categories. Please try again.");
-        }
+        if (cancelled) return;
+        setCategories(fallbackLists);
+        hydrateForm(fallbackLists);
       });
 
     return () => {
@@ -71,6 +104,7 @@ export default function AddEntryModal({ open, onClose, onSuccess, defaultDate, e
 
   const switchType = (newType) => {
     setType(newType);
+    setCategoryQuery("");
     const list = newType === "income" ? categories.income : categories.expense;
     if (!list.length) return;
     if (category && list.includes(category)) return;
@@ -83,8 +117,9 @@ export default function AddEntryModal({ open, onClose, onSuccess, defaultDate, e
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!category) {
-      setError("Please select a category");
+    const allowed = type === "income" ? categories.income : categories.expense;
+    if (!category || !allowed.includes(category)) {
+      setError("Please select a valid category");
       return;
     }
     if (!amount || Number(amount) <= 0) {
@@ -120,15 +155,29 @@ export default function AddEntryModal({ open, onClose, onSuccess, defaultDate, e
     }
   };
 
-  const currentCategories = type === "income" ? categories.income : categories.expense;
+  const currentCategories = useMemo(() => {
+    const list = type === "income" ? categories.income : categories.expense;
+    if (category && !list.includes(category)) {
+      return [category, ...list];
+    }
+    return list;
+  }, [type, categories, category]);
   const selectedMeta = category ? getCategoryMeta(category) : null;
+  const filteredCategories = useMemo(() => {
+    const q = categoryQuery.trim().toLowerCase();
+    if (!q) return currentCategories;
+    return currentCategories.filter((cat) => {
+      const meta = getCategoryMeta(cat);
+      return meta.label.toLowerCase().includes(q) || cat.includes(q);
+    });
+  }, [currentCategories, categoryQuery]);
 
   return (
     <Modal
       open={open}
       onClose={onClose}
       title={isEdit ? "Edit Entry" : "Add Entry"}
-      size="md"
+      size="lg"
     >
       <form onSubmit={handleSubmit} className="modal-form">
         <div className="modal-form-fields space-y-5">
@@ -138,14 +187,14 @@ export default function AddEntryModal({ open, onClose, onSuccess, defaultDate, e
             onClick={() => switchType("expense")}
             className={`type-toggle-btn ${type === "expense" ? "type-toggle-btn-expense-active" : ""}`}
           >
-            💸 Expense
+            Expense
           </button>
           <button
             type="button"
             onClick={() => switchType("income")}
             className={`type-toggle-btn ${type === "income" ? "type-toggle-btn-income-active" : ""}`}
           >
-            💰 Income
+            Income
           </button>
         </div>
 
@@ -177,19 +226,35 @@ export default function AddEntryModal({ open, onClose, onSuccess, defaultDate, e
           <label className="label">
             Category
             {selectedMeta && (
-              <span className="ml-2 text-cyan-400/80 font-normal">
+              <span className="ml-2 text-emerald-400/80 font-normal">
                 — {selectedMeta.icon} {selectedMeta.label}
               </span>
             )}
           </label>
-          <div className="category-grid">
-            {currentCategories.map((cat) => {
+          <input
+            type="search"
+            className="input mb-3"
+            placeholder="Search categories"
+            value={categoryQuery}
+            onChange={(e) => setCategoryQuery(e.target.value)}
+            autoComplete="off"
+            enterKeyHint="search"
+          />
+          <div className="category-grid" role="listbox" aria-label="Categories">
+            {filteredCategories.length === 0 && (
+              <p className="col-span-full text-sm text-dim px-1 py-3">
+                No categories match “{categoryQuery}”.
+              </p>
+            )}
+            {filteredCategories.map((cat) => {
               const meta = getCategoryMeta(cat);
               const isSelected = category === cat;
               return (
                 <button
                   key={cat}
                   type="button"
+                  role="option"
+                  aria-selected={isSelected}
                   onClick={() => setCategory(cat)}
                   className={
                     isSelected
@@ -197,7 +262,9 @@ export default function AddEntryModal({ open, onClose, onSuccess, defaultDate, e
                       : "category-chip category-chip-inactive"
                   }
                 >
-                  <span className="text-2xl">{meta.icon}</span>
+                  <span className="text-xl sm:text-2xl" aria-hidden>
+                    {meta.icon}
+                  </span>
                   <span>{meta.label}</span>
                 </button>
               );
@@ -224,13 +291,13 @@ export default function AddEntryModal({ open, onClose, onSuccess, defaultDate, e
           <button
             type="submit"
             disabled={loading || !category}
-            className={`flex-1 py-3.5 rounded-xl font-bold text-white transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 ${
+            className={`flex-1 py-3.5 rounded-xl font-bold text-white transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 min-h-[48px] ${
               type === "income"
-                ? "bg-gradient-to-r from-emerald-500 to-teal-600 shadow-emerald-500/25 hover:from-emerald-600 hover:to-teal-700"
-                : "bg-gradient-to-r from-red-500 to-rose-600 shadow-red-500/25 hover:from-red-600 hover:to-rose-700"
+                ? "bg-[#1d9e75] shadow-emerald-500/20 hover:bg-[#1b8f6a]"
+                : "bg-rose-600 shadow-rose-500/20 hover:bg-rose-500"
             }`}
           >
-            {loading ? "Saving..." : isEdit ? "Save Changes" : type === "income" ? "💰 Add Income" : "💸 Add Expense"}
+            {loading ? "Saving..." : isEdit ? "Save changes" : type === "income" ? "Add income" : "Add expense"}
           </button>
           {isEdit && (
             <button type="button" onClick={onClose} className="btn-secondary !px-5">

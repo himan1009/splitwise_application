@@ -376,12 +376,12 @@ export default function MonthlyTracker() {
       {view === "list" && (
         <div className="card !p-2 sm:!p-3">
           {categoryFilter && (
-            <div className="flex items-center justify-between gap-3 px-3 py-2 mb-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
-              <p className="text-sm text-cyan-300">
+            <div className="flex items-center justify-between gap-3 px-3 py-2 mb-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+              <p className="text-sm text-emerald-300">
                 Filtered: {getCategoryMeta(categoryFilter).icon}{" "}
                 {getCategoryMeta(categoryFilter).label}
               </p>
-              <button type="button" onClick={clearCategoryFilter} className="text-xs font-semibold text-cyan-400">
+              <button type="button" onClick={clearCategoryFilter} className="text-xs font-semibold text-emerald-400 min-h-[44px] px-2">
                 Clear
               </button>
             </div>

@@ -7,9 +7,16 @@ export const ESSENTIAL_CATEGORIES = [
   "health",
   "education",
   "transport",
+  "fuel",
   "groceries",
   "insurance",
   "emi_loans",
+  "household",
+  "home_repair",
+  "taxes_fees",
+  "kids_family",
+  "work",
+  "investment",
 ];
 
 export const DISCRETIONARY_CATEGORIES = [
@@ -17,10 +24,19 @@ export const DISCRETIONARY_CATEGORIES = [
   "shopping",
   "entertainment",
   "food",
+  "cafe_snacks",
   "subscriptions",
   "travel",
   "personal_care",
   "charity",
+  "clothing",
+  "electronics",
+  "hobbies",
+  "gym_fitness",
+  "pets",
+  "gifts",
+  "taxi_cabs",
+  "parking_tolls",
 ];
 
 const DISCRETIONARY_THRESHOLD_PCT = 35;

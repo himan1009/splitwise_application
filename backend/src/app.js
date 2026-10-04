@@ -30,13 +30,50 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: "100kb" }));
 
-app.get("/health", (req, res) => {
-  const dbState = mongoose.connection.readyState;
-  const dbOk = dbState === 1;
-  res.status(dbOk ? 200 : 503).json({
-    status: dbOk ? "ok" : "degraded",
-    db: dbOk ? "connected" : "disconnected",
-  });
+app.get("/health", async (req, res) => {
+  const timeoutMs = 8000;
+  let finished = false;
+
+  const timer = setTimeout(() => {
+    if (finished) return;
+    finished = true;
+    if (!res.headersSent) {
+      res.status(503).json({ status: "degraded", db: "timeout" });
+    }
+  }, timeoutMs);
+
+  try {
+    const dbState = mongoose.connection.readyState;
+    if (dbState !== 1 || !mongoose.connection.db) {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      return res.status(503).json({
+        status: "degraded",
+        db: "disconnected",
+      });
+    }
+
+    await mongoose.connection.db.command({ ping: 1 });
+    if (finished) return;
+    finished = true;
+    clearTimeout(timer);
+    res.status(200).json({
+      status: "ok",
+      db: "connected",
+    });
+  } catch (err) {
+    console.error("Health ping failed:", err.message);
+    if (finished) return;
+    finished = true;
+    clearTimeout(timer);
+    if (!res.headersSent) {
+      res.status(503).json({
+        status: "degraded",
+        db: "error",
+      });
+    }
+  }
 });
 
 app.use("/auth", require("./routes/auth.routes"));

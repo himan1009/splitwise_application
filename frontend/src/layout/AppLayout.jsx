@@ -50,7 +50,7 @@ export default function AppLayout({ setIsAuthenticated }) {
               <span className="app-logo-text">FinTrack</span>
             </button>
 
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden lg:flex items-center gap-1">
               {NAV_ITEMS.map((item) => (
                 <NavLink
                   key={item.to}
@@ -80,7 +80,7 @@ export default function AppLayout({ setIsAuthenticated }) {
               <button
                 type="button"
                 onClick={() => navigate("/account")}
-                className="app-avatar hidden sm:flex touch-target"
+                className="app-avatar flex touch-target"
                 aria-label="Account settings"
               >
                 {user?.name?.charAt(0)?.toUpperCase() || "?"}
@@ -121,7 +121,7 @@ export default function AppLayout({ setIsAuthenticated }) {
         <Outlet />
       </main>
 
-      <nav className="mobile-bottom-nav md:hidden" aria-label="Main navigation">
+      <nav className="mobile-bottom-nav lg:hidden" aria-label="Main navigation">
         {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.to}

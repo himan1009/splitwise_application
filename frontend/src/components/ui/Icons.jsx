@@ -61,9 +61,13 @@ export function IconTag({ className = "w-4 h-4" }) {
 export function BrandMark({ size = 32 }) {
   return (
     <span className="brand-mark" style={{ width: size, height: size }} aria-hidden>
-      <svg viewBox="0 0 32 32" fill="none" width="100%" height="100%" aria-hidden>
+      <svg viewBox="0 0 32 32" fill="none" width="100%" height="100%">
         <rect width="32" height="32" rx="8" fill="#1D9E75" />
-        <path d="M9 21.5V10.5h8.2c2.6 0 4.3 1.5 4.3 3.7 0 1.5-.9 2.7-2.3 3.2 1.6.4 2.7 1.7 2.7 3.4 0 2.3-1.8 4-4.6 4H9zm3.1-1.9h5.4c1.4 0 2.2-.7 2.2-1.8s-.8-1.8-2.2-1.8h-5.4v3.6zm0-5.5h4.9c1.3 0 2.1-.7 2.1-1.7s-.8-1.7-2.1-1.7h-4.9v3.4z" fill="white" />
+        <g fill="#ffffff">
+          <rect x="10.2" y="7.2" width="3.6" height="17.8" rx="1.2" />
+          <rect x="10.2" y="7.2" width="11.4" height="3.6" rx="1.2" />
+          <rect x="10.2" y="14.4" width="8.2" height="3.3" rx="1.2" />
+        </g>
       </svg>
     </span>
   );
