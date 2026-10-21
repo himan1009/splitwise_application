@@ -3,7 +3,6 @@ const dns = require("dns");
 const mongoose = require("mongoose");
 const { validateEnv } = require("./config/env");
 const app = require("./app");
-const { startKeepAlive, stopKeepAlive } = require("./utils/keepAlive");
 
 validateEnv();
 
@@ -20,7 +19,6 @@ mongoose
     console.log("MongoDB connected");
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
-      startKeepAlive();
     });
   })
   .catch((err) => {
@@ -29,7 +27,6 @@ mongoose
   });
 
 const shutdown = () => {
-  stopKeepAlive();
   mongoose.connection.close(false).then(() => process.exit(0)).catch(() => process.exit(1));
 };
 
