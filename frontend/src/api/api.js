@@ -1,8 +1,19 @@
 import axios from "axios";
 import { clearSession } from "../utils/auth";
 
+function resolveApiBaseUrl() {
+  const raw = (import.meta.env.VITE_API_URL || "http://localhost:5000").trim();
+  if (!raw) return "http://localhost:5000";
+  const withoutTrailingSlash = raw.replace(/\/+$/, "");
+  if (/^https?:\/\//i.test(withoutTrailingSlash)) {
+    return withoutTrailingSlash;
+  }
+  // Hosting dashboards often paste the host without a scheme; axios would treat that as a relative path.
+  return `https://${withoutTrailingSlash}`;
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
+  baseURL: resolveApiBaseUrl(),
   timeout: 90000,
 });
 
