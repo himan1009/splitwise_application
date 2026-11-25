@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import SlowLoadHint from "../components/ui/SlowLoadHint";
 import { getApiErrorMessage } from "../utils/apiErrors";
 import { BrandMark } from "../components/ui/Icons";
+import AuthPageShell from "../components/brand/AuthPageShell";
+import { BrandWordmark } from "../components/brand/BrandWordmark";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -34,16 +36,14 @@ export default function Register() {
   };
 
   return (
-    <div className="login-world">
-      <div className="login-noise" />
-
+    <AuthPageShell>
       <div className="login-shell login-shell-single">
         <div className="login-panel">
           <div className="login-mobile-brand">
             <span className="login-mobile-brand-icon">
               <BrandMark size={32} />
             </span>
-            <span className="login-mobile-brand-text">FinTrack</span>
+            <BrandWordmark size="sm" />
           </div>
           <div className="login-panel-glow" />
 
@@ -123,6 +123,6 @@ export default function Register() {
           </div>
         </div>
       </div>
-    </div>
+    </AuthPageShell>
   );
 }

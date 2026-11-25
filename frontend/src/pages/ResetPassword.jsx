@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/api";
 import SlowLoadHint from "../components/ui/SlowLoadHint";
 import { getApiErrorMessage } from "../utils/apiErrors";
+import AuthPageShell from "../components/brand/AuthPageShell";
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -45,8 +46,7 @@ export default function ResetPassword() {
 
   if (!token) {
     return (
-      <div className="login-world">
-        <div className="login-noise" />
+      <AuthPageShell>
         <div className="login-shell login-shell-single">
           <div className="login-panel">
             <div className="login-form-wrap text-center">
@@ -58,13 +58,12 @@ export default function ResetPassword() {
             </div>
           </div>
         </div>
-      </div>
+    </AuthPageShell>
     );
   }
 
   return (
-    <div className="login-world">
-      <div className="login-noise" />
+    <AuthPageShell>
       <div className="login-shell login-shell-single">
         <div className="login-panel">
           <div className="login-form-wrap">
@@ -123,6 +122,6 @@ export default function ResetPassword() {
           </div>
         </div>
       </div>
-    </div>
+    </AuthPageShell>
   );
 }

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../api/api";
 import SlowLoadHint from "../components/ui/SlowLoadHint";
 import { getApiErrorMessage } from "../utils/apiErrors";
+import AuthPageShell from "../components/brand/AuthPageShell";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -28,8 +29,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="login-world">
-      <div className="login-noise" />
+    <AuthPageShell>
       <div className="login-shell login-shell-single">
         <div className="login-panel">
           <div className="login-form-wrap">
@@ -82,13 +82,13 @@ export default function ForgotPassword() {
                 Back to sign in
               </button>
               <span className="mx-2 text-slate-600">·</span>
-              <Link to="/register" className="text-cyan-400 hover:text-cyan-300">
+              <Link to="/register" className="text-emerald-400 hover:text-emerald-300">
                 Create account
               </Link>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </AuthPageShell>
   );
 }

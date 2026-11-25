@@ -5,16 +5,36 @@
 @tailwind utilities;
 
 :root {
-  --ft-bg: #0a0b0d;
-  --ft-surface: #13161b;
-  --ft-surface-raised: #1a1e24;
-  --ft-border: rgba(255, 255, 255, 0.08);
+  --ft-bg: #07080a;
+  --ft-bg-elevated: #0d0f12;
+  --ft-surface: #12151a;
+  --ft-surface-raised: #181c22;
+  --ft-border: rgba(255, 255, 255, 0.09);
+  --ft-border-strong: rgba(29, 158, 117, 0.22);
   --ft-emerald: #1d9e75;
+  --ft-emerald-bright: #2cc28a;
+  --ft-mint: #5ee9b5;
+  --ft-gold: #e4c06a;
   --ft-emerald-soft: rgba(29, 158, 117, 0.14);
-  --ft-emerald-glow: rgba(29, 158, 117, 0.35);
-  --ft-text: #e8eaed;
-  --ft-muted: #94a3b8;
-  --ft-radius-lg: 1rem;
+  --ft-emerald-glow: rgba(29, 158, 117, 0.38);
+  --ft-teal-glow: rgba(45, 212, 191, 0.12);
+  --ft-text: #eef1f4;
+  --ft-muted: #8b97a8;
+  --ft-radius-lg: 1.05rem;
+  --ft-radius-xl: 1.35rem;
+  --ft-shadow-card: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 16px 48px rgba(0, 0, 0, 0.35);
+  --ft-gradient-brand: linear-gradient(
+    135deg,
+    #0f3d2c 0%,
+    #132218 38%,
+    #0a0b0d 100%
+  );
+  --ft-gradient-hero: linear-gradient(
+    125deg,
+    rgba(29, 158, 117, 0.55) 0%,
+    rgba(15, 85, 65, 0.45) 42%,
+    rgba(18, 21, 26, 0.95) 100%
+  );
 }
 
 @layer base {
@@ -1147,11 +1167,12 @@ body.modal-open .mobile-bottom-nav {
 .report-hero {
   position: relative;
   overflow: hidden;
-  border-radius: 1.25rem;
+  border-radius: var(--ft-radius-xl);
   padding: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, rgba(8, 145, 178, 0.4) 0%, rgba(99, 102, 241, 0.4) 50%, rgba(139, 92, 246, 0.4) 100%);
+  border: 1px solid var(--ft-border-strong);
+  background: var(--ft-gradient-hero);
   backdrop-filter: blur(12px);
+  box-shadow: 0 12px 40px rgba(29, 158, 117, 0.12);
 }
 
 .report-hero::after {
@@ -1434,16 +1455,17 @@ body.modal-open .mobile-bottom-nav {
 }
 
 .back-link:hover {
-  color: #38bdf8;
+  color: var(--ft-mint);
 }
 
 .detail-hero {
   position: relative;
   overflow: hidden;
-  border-radius: 1rem;
+  border-radius: var(--ft-radius-lg);
   padding: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  background: #14161a;
+  border: 1px solid var(--ft-border);
+  background: var(--ft-gradient-brand);
+  box-shadow: var(--ft-shadow-card);
 }
 
 .detail-hero-green {
@@ -1458,7 +1480,8 @@ body.modal-open .mobile-bottom-nav {
 
 .detail-hero-neutral,
 .detail-hero-indigo {
-  background: #14161a;
+  background: linear-gradient(125deg, rgba(29, 158, 117, 0.22) 0%, rgba(18, 21, 26, 0.98) 55%);
+  border-color: var(--ft-border-strong);
 }
 
 .member-grid {
@@ -1940,7 +1963,8 @@ body.modal-open .mobile-bottom-nav {
 /* ─── Login: New World Theme ─── */
 .login-world {
   min-height: 100vh;
-  background: #0b0c0e;
+  min-height: 100dvh;
+  background: var(--ft-bg);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -1952,26 +1976,21 @@ body.modal-open .mobile-bottom-nav {
   text-rendering: optimizeLegibility;
 }
 
-.login-grid,
-.login-aurora,
-.login-aurora-1,
-.login-aurora-2,
-.login-aurora-3,
-.login-orb,
-.login-orb-1,
-.login-orb-2,
-.login-orb-3 {
-  display: none;
+.auth-ambient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .login-grid {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 70%);
+    linear-gradient(rgba(94, 233, 181, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(94, 233, 181, 0.04) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 85% 65% at 50% 35%, black 25%, transparent 72%);
 }
 
 .login-aurora {
@@ -1983,31 +2002,33 @@ body.modal-open .mobile-bottom-nav {
 }
 
 .login-aurora-1 {
-  width: 600px;
-  height: 600px;
-  background: #4f46e5;
-  top: -20%;
-  left: -10%;
+  width: min(560px, 75vw);
+  height: min(560px, 75vw);
+  background: var(--ft-emerald);
+  top: -18%;
+  left: -12%;
   animation-delay: 0s;
+  opacity: 0.35;
 }
 
 .login-aurora-2 {
-  width: 500px;
-  height: 500px;
-  background: #06b6d4;
-  bottom: -15%;
-  right: -5%;
+  width: min(480px, 65vw);
+  height: min(480px, 65vw);
+  background: #0f766e;
+  bottom: -12%;
+  right: -8%;
   animation-delay: -4s;
+  opacity: 0.3;
 }
 
 .login-aurora-3 {
-  width: 400px;
-  height: 400px;
-  background: #d946ef;
-  top: 40%;
-  left: 30%;
+  width: min(360px, 50vw);
+  height: min(360px, 50vw);
+  background: var(--ft-gold);
+  top: 42%;
+  left: 28%;
   animation-delay: -8s;
-  opacity: 0.3;
+  opacity: 0.12;
 }
 
 .login-noise {
@@ -2030,7 +2051,8 @@ body.modal-open .mobile-bottom-nav {
   height: 120px;
   top: 15%;
   right: 20%;
-  background: radial-gradient(circle at 30% 30%, rgba(0, 240, 255, 0.1), transparent);
+  background: radial-gradient(circle at 30% 30%, var(--ft-teal-glow), transparent);
+  border-color: rgba(29, 158, 117, 0.2);
 }
 
 .login-orb-2 {
@@ -2039,7 +2061,7 @@ body.modal-open .mobile-bottom-nav {
   bottom: 25%;
   left: 15%;
   animation-delay: -3s;
-  border-color: rgba(217, 70, 239, 0.2);
+  border-color: rgba(228, 192, 106, 0.2);
 }
 
 .login-orb-3 {
@@ -2050,21 +2072,9 @@ body.modal-open .mobile-bottom-nav {
   animation-delay: -5s;
 }
 
-.login-grid,
-.login-aurora,
-.login-aurora-1,
-.login-aurora-2,
-.login-aurora-3,
-.login-orb,
-.login-orb-1,
-.login-orb-2,
-.login-orb-3 {
-  display: none !important;
-}
-
 .login-shell {
   position: relative;
-  z-index: 10;
+  z-index: 2;
   display: grid;
   grid-template-columns: 1fr;
   width: 100%;
@@ -2136,7 +2146,11 @@ body.modal-open .mobile-bottom-nav {
 }
 
 .login-title-accent {
-  color: #34d399;
+  color: var(--ft-mint);
+  background: linear-gradient(135deg, var(--ft-mint) 0%, var(--ft-emerald-bright) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .login-tagline {
@@ -2168,8 +2182,8 @@ body.modal-open .mobile-bottom-nav {
 }
 
 .login-feature-card:hover {
-  border-color: rgba(0, 240, 255, 0.2);
-  background: rgba(0, 240, 255, 0.04);
+  border-color: var(--ft-border-strong);
+  background: var(--ft-emerald-soft);
 }
 
 .login-feature-icon {
@@ -2242,18 +2256,25 @@ body.modal-open .mobile-bottom-nav {
 }
 
 .login-panel-glow {
-  display: none;
+  position: absolute;
+  inset: 10% 5%;
+  border-radius: var(--ft-radius-xl);
+  background: radial-gradient(ellipse at 50% 0%, var(--ft-emerald-glow), transparent 65%);
+  opacity: 0.35;
+  filter: blur(40px);
+  pointer-events: none;
 }
 
 .login-form-wrap {
   position: relative;
+  z-index: 1;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   padding: 2rem;
-  border-radius: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #14161a;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  border-radius: var(--ft-radius-xl);
+  border: 1px solid var(--ft-border);
+  background: linear-gradient(165deg, rgba(24, 28, 34, 0.98) 0%, rgba(14, 16, 20, 0.98) 100%);
+  box-shadow: var(--ft-shadow-card);
 }
 
 @media (min-width: 640px) {
@@ -3174,11 +3195,12 @@ body.modal-open .mobile-bottom-nav {
 
 .insights-hero {
   position: relative;
-  border-radius: 1.25rem;
+  border-radius: var(--ft-radius-xl);
   padding: 1.5rem 1.25rem;
   overflow: hidden;
-  background: linear-gradient(135deg, #0f3d2e 0%, #0b1f17 45%, #0b0c0e 100%);
-  border: 1px solid rgba(29, 158, 117, 0.25);
+  background: var(--ft-gradient-brand);
+  border: 1px solid var(--ft-border-strong);
+  box-shadow: var(--ft-shadow-card);
 }
 
 .insights-hero-glow {
@@ -3701,6 +3723,45 @@ body.modal-open .mobile-bottom-nav {
 }
 
 .security-notice-card {
-  border-color: rgba(99, 102, 241, 0.2);
-  background: rgba(99, 102, 241, 0.06);
+  border-color: var(--ft-border-strong);
+  background: var(--ft-emerald-soft);
+}
+
+/* ─── Brand wordmark ─── */
+.brand-wordmark {
+  font-family: "Outfit", sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+}
+
+.brand-wordmark-fin {
+  color: #f4f4f5;
+}
+
+.brand-wordmark-track {
+  color: var(--ft-mint);
+  font-weight: 800;
+}
+
+.brand-wordmark-sm {
+  font-size: 1.125rem;
+}
+
+.brand-wordmark-md {
+  font-size: 1.25rem;
+}
+
+.brand-wordmark-lg {
+  font-size: clamp(2.5rem, 6vw, 3.75rem);
+}
+
+.brand-wordmark-lg .brand-wordmark-track {
+  background: linear-gradient(135deg, var(--ft-mint), var(--ft-emerald-bright));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }

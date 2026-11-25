@@ -4,14 +4,22 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: "#eef2ff",
-          100: "#e0e7ff",
-          500: "#6366f1",
-          600: "#4f46e5",
-          700: "#4338ca",
+        ft: {
+          bg: "#0a0b0d",
+          surface: "#13161b",
+          raised: "#1a1e24",
+          emerald: "#1d9e75",
+          mint: "#5ee9b5",
+          gold: "#e8c468",
         },
-        surface: "#f8fafc",
+        brand: {
+          50: "#ecfdf5",
+          100: "#d1fae5",
+          500: "#1d9e75",
+          600: "#178564",
+          700: "#0f6b4f",
+        },
+        surface: "#13161b",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],

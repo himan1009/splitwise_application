@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/api";
 import { getApiErrorMessage } from "../utils/apiErrors";
+import AuthPageShell from "../components/brand/AuthPageShell";
 
 export default function CheckEmail() {
   const [searchParams] = useSearchParams();
@@ -30,8 +31,7 @@ export default function CheckEmail() {
   };
 
   return (
-    <div className="login-world">
-      <div className="login-noise" />
+    <AuthPageShell>
       <div className="login-shell login-shell-single">
         <div className="login-panel">
           <div className="login-form-wrap">
@@ -67,6 +67,6 @@ export default function CheckEmail() {
           </div>
         </div>
       </div>
-    </div>
+    </AuthPageShell>
   );
 }

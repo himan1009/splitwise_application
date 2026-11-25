@@ -5,6 +5,8 @@ import SlowLoadHint from "../components/ui/SlowLoadHint";
 import { getApiErrorMessage } from "../utils/apiErrors";
 import { getSafeReturnPath } from "../utils/auth";
 import { BrandMark } from "../components/ui/Icons";
+import AuthPageShell from "../components/brand/AuthPageShell";
+import { BrandWordmark } from "../components/brand/BrandWordmark";
 
 export default function Login({ setIsAuthenticated }) {
   const [email, setEmail] = useState("");
@@ -77,31 +79,28 @@ export default function Login({ setIsAuthenticated }) {
   };
 
   return (
-    <div className="login-world">
-      <div className="login-noise" />
-
+    <AuthPageShell>
       <div className="login-shell">
         <div className="login-hero">
           <div className="login-hero-inner">
             <div className="login-badge">
               <span className="login-badge-dot" />
-              Personal finance, kept simple
+              Smart money workspace · INR-first
             </div>
 
             <h1 className="login-title">
-              <span className="login-title-line">Fin</span>
-              <span className="login-title-line login-title-accent">Track</span>
+              <BrandWordmark size="lg" />
             </h1>
 
             <p className="login-tagline">
-              Track spending, split group bills, and settle personal debts — all in one calm workspace.
+              Track every rupee, read period insights, split with groups, and settle debts — one branded home for your money.
             </p>
 
             <div className="login-features">
               {[
-                { label: "Monthly tracker", sub: "Income, expenses, and day-by-day cash flow" },
-                { label: "Group splits", sub: "Trips and shared costs without the spreadsheet" },
-                { label: "Personal debts", sub: "Who owes whom, with a clear settlement trail" },
+                { label: "Tracker & insights", sub: "Monthly to yearly essentials vs lifestyle" },
+                { label: "Group splits", sub: "Shared costs with live balance overview" },
+                { label: "Personal debts", sub: "Settle up with a secure audit trail" },
               ].map((f) => (
                 <div key={f.label} className="login-feature-card">
                   <span className="login-feature-icon">•</span>
@@ -137,7 +136,7 @@ export default function Login({ setIsAuthenticated }) {
             <span className="login-mobile-brand-icon">
               <BrandMark size={32} />
             </span>
-            <span className="login-mobile-brand-text">FinTrack</span>
+            <BrandWordmark size="sm" />
           </div>
           <div className="login-panel-glow" />
 
@@ -238,6 +237,6 @@ export default function Login({ setIsAuthenticated }) {
           </div>
         </div>
       </div>
-    </div>
+    </AuthPageShell>
   );
 }

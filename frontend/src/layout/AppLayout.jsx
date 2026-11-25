@@ -4,6 +4,7 @@ import Footer from "../components/Footer";
 import api from "../api/api";
 import { getStoredUser, clearSession, updateStoredUser } from "../utils/auth";
 import { BrandMark, IconTracker, IconInsights, IconGroups, IconDebts } from "../components/ui/Icons";
+import { BrandWordmark } from "../components/brand/BrandWordmark";
 
 const NAV_ITEMS = [
   { to: "/tracker", label: "Tracker", Icon: IconTracker, paths: ["/tracker"] },
@@ -53,9 +54,7 @@ export default function AppLayout({ setIsAuthenticated }) {
               type="button"
             >
               <BrandMark size={32} />
-              <span className="app-logo-text">
-                Fin<span className="app-logo-accent">Track</span>
-              </span>
+              <BrandWordmark size="sm" />
             </button>
 
             <nav className="hidden lg:flex items-center gap-1">
