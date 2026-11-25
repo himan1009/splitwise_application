@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import api from "../api/api";
 import AddEntryModal from "../components/AddEntryModal";
 import DaySummaryModal from "../components/DaySummaryModal";
@@ -230,6 +231,16 @@ export default function MonthlyTracker() {
           </div>
         </div>
       )}
+
+      <Link to="/insights" className="insights-promo-link">
+        <div>
+          <p className="text-sm font-bold text-emerald-300">Full period insights</p>
+          <p className="text-xs text-dim mt-0.5">
+            Monthly · quarterly · half-year · yearly charts & action plan
+          </p>
+        </div>
+        <span className="text-emerald-400 font-semibold text-sm shrink-0">Open →</span>
+      </Link>
 
       {/* View toggle */}
       <div className="view-tabs-wrap">

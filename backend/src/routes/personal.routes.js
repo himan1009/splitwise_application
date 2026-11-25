@@ -13,5 +13,6 @@ router.delete("/entries/:id", c.deleteEntry);
 router.get("/summary/monthly", c.getMonthlySummary);
 router.get("/summary/daily", c.getDailySummary);
 router.get("/summary/day", c.getDayDetail);
+router.get("/insights/period", c.getPeriodInsights);
 
 module.exports = router;

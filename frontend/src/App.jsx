@@ -11,6 +11,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AccountSettings from "./pages/AccountSettings";
 import MonthlyTracker from "./pages/MonthlyTracker";
+import Insights from "./pages/Insights";
 import Groups from "./pages/Groups";
 import Debts from "./pages/Debts";
 import CreateGroup from "./pages/CreateGroup";
@@ -64,6 +65,7 @@ export default function App() {
         }
       >
         <Route path="/tracker" element={<MonthlyTracker />} />
+        <Route path="/insights" element={<Insights />} />
         <Route path="/groups" element={<Groups />} />
         <Route path="/debts" element={<Debts />} />
         <Route path="/dashboard" element={<Navigate to="/groups" replace />} />

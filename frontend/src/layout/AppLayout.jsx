@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import Footer from "../components/Footer";
 import api from "../api/api";
 import { getStoredUser, clearSession, updateStoredUser } from "../utils/auth";
-import { BrandMark, IconTracker, IconGroups, IconDebts } from "../components/ui/Icons";
+import { BrandMark, IconTracker, IconInsights, IconGroups, IconDebts } from "../components/ui/Icons";
 
 const NAV_ITEMS = [
   { to: "/tracker", label: "Tracker", Icon: IconTracker, paths: ["/tracker"] },
+  { to: "/insights", label: "Insights", Icon: IconInsights, paths: ["/insights"] },
   { to: "/groups", label: "Groups", Icon: IconGroups, paths: ["/groups", "/group", "/create-group"] },
   { to: "/debts", label: "Debts", Icon: IconDebts, paths: ["/debts", "/debt", "/add-debt"] },
 ];

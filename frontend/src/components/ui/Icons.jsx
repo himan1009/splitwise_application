@@ -49,6 +49,18 @@ export function IconList({ className = "w-4 h-4" }) {
   );
 }
 
+export function IconInsights({ className = "w-5 h-5" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+      <path strokeLinecap="round" d="M4 19V7m5 12V4m5 15V9m5 10V5" />
+      <circle cx="4" cy="7" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="4" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="14" cy="9" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="5" r="1.5" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function IconTag({ className = "w-4 h-4" }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>

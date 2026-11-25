@@ -376,6 +376,238 @@ const getDailySummary = async (req, res) => {
   }
 };
 
+const PERIOD_PRESETS = new Set(["month", "quarter", "half", "year"]);
+
+const shiftAnchorMonth = (anchor, deltaMonths) => {
+  const [year, month] = anchor.split("-").map(Number);
+  const date = new Date(year, month - 1 + deltaMonths, 1);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+};
+
+const getPeriodBounds = (preset, anchor) => {
+  const [year, month] = anchor.split("-").map(Number);
+  if (!year || !month || month < 1 || month > 12) return null;
+
+  const monthRange = (y, m) => parseMonth(`${y}-${String(m).padStart(2, "0")}`);
+
+  if (preset === "month") {
+    const current = monthRange(year, month);
+    if (!current) return null;
+    const prevAnchor = shiftAnchorMonth(anchor, -1);
+    const [py, pm] = prevAnchor.split("-").map(Number);
+    const previousRange = monthRange(py, pm);
+    return {
+      start: current.start,
+      end: current.end,
+      labelKey: anchor,
+      previous: previousRange,
+    };
+  }
+
+  if (preset === "quarter") {
+    const qStartMonth = Math.floor((month - 1) / 3) * 3 + 1;
+    const qEndMonth = qStartMonth + 2;
+    const start = new Date(year, qStartMonth - 1, 1);
+    const end = new Date(year, qEndMonth, 0, 23, 59, 59, 999);
+    const qNum = Math.ceil(month / 3);
+    const prevQStartMonth = qStartMonth - 3;
+    const prevYear = prevQStartMonth < 1 ? year - 1 : year;
+    const normalizedStart = prevQStartMonth < 1 ? prevQStartMonth + 12 : prevQStartMonth;
+    const prevStart = new Date(prevYear, normalizedStart - 1, 1);
+    const prevEnd = new Date(prevYear, normalizedStart + 2, 0, 23, 59, 59, 999);
+    return {
+      start,
+      end,
+      labelKey: `${year}-Q${qNum}`,
+      previous: { start: prevStart, end: prevEnd },
+    };
+  }
+
+  if (preset === "half") {
+    const isH1 = month <= 6;
+    const start = isH1 ? new Date(year, 0, 1) : new Date(year, 6, 1);
+    const end = isH1
+      ? new Date(year, 6, 0, 23, 59, 59, 999)
+      : new Date(year, 12, 0, 23, 59, 59, 999);
+    const previous = isH1
+      ? { start: new Date(year - 1, 6, 1), end: new Date(year - 1, 12, 0, 23, 59, 59, 999) }
+      : { start: new Date(year, 0, 1), end: new Date(year, 6, 0, 23, 59, 59, 999) };
+    return {
+      start,
+      end,
+      labelKey: isH1 ? `${year}-H1` : `${year}-H2`,
+      previous,
+    };
+  }
+
+  if (preset === "year") {
+    const start = new Date(year, 0, 1);
+    const end = new Date(year, 12, 0, 23, 59, 59, 999);
+    const previous = {
+      start: new Date(year - 1, 0, 1),
+      end: new Date(year - 1, 12, 0, 23, 59, 59, 999),
+    };
+    return {
+      start,
+      end,
+      labelKey: String(year),
+      previous,
+    };
+  }
+
+  return null;
+};
+
+const aggregatePeriod = async (userId, start, end) => {
+  const match = {
+    userId,
+    date: { $gte: start, $lte: end },
+  };
+
+  const [totals, expenseByCategory, incomeByCategory, monthlyAgg, entries] = await Promise.all([
+    PersonalEntry.aggregate([
+      { $match: match },
+      { $group: { _id: "$type", total: { $sum: "$amount" }, count: { $sum: 1 } } },
+    ]),
+    PersonalEntry.aggregate([
+      { $match: { ...match, type: "expense" } },
+      {
+        $group: {
+          _id: "$category",
+          total: { $sum: "$amount" },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { total: -1 } },
+    ]),
+    PersonalEntry.aggregate([
+      { $match: { ...match, type: "income" } },
+      {
+        $group: {
+          _id: "$category",
+          total: { $sum: "$amount" },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { total: -1 } },
+    ]),
+    PersonalEntry.aggregate([
+      { $match: match },
+      {
+        $project: {
+          type: 1,
+          amount: 1,
+          month: { $dateToString: { format: "%Y-%m", date: "$date" } },
+        },
+      },
+      {
+        $group: {
+          _id: { month: "$month", type: "$type" },
+          total: { $sum: "$amount" },
+        },
+      },
+      { $sort: { "_id.month": 1 } },
+    ]),
+    PersonalEntry.find(match)
+      .select("type amount date category message")
+      .sort({ date: -1 })
+      .lean(),
+  ]);
+
+  let totalIncome = 0;
+  let totalExpenses = 0;
+  let incomeCount = 0;
+  let expenseCount = 0;
+  totals.forEach((t) => {
+    if (t._id === "income") {
+      totalIncome = t.total;
+      incomeCount = t.count;
+    }
+    if (t._id === "expense") {
+      totalExpenses = t.total;
+      expenseCount = t.count;
+    }
+  });
+
+  const bucketMap = {};
+  monthlyAgg.forEach((row) => {
+    const key = row._id.month;
+    if (!bucketMap[key]) {
+      bucketMap[key] = { month: key, income: 0, expenses: 0, balance: 0 };
+    }
+    if (row._id.type === "income") bucketMap[key].income = row.total;
+    if (row._id.type === "expense") bucketMap[key].expenses = row.total;
+  });
+  const monthlyBuckets = Object.values(bucketMap)
+    .map((b) => ({
+      ...b,
+      balance: b.income - b.expenses,
+    }))
+    .sort((a, b) => a.month.localeCompare(b.month));
+
+  return {
+    totalIncome,
+    totalExpenses,
+    balance: totalIncome - totalExpenses,
+    incomeCount,
+    expenseCount,
+    byCategory: expenseByCategory,
+    byIncomeCategory: incomeByCategory,
+    monthlyBuckets,
+    entries,
+  };
+};
+
+const getPeriodInsights = async (req, res) => {
+  try {
+    const preset = (req.query.preset || "month").toLowerCase();
+    const anchor = req.query.anchor || (() => {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, "0");
+      return `${y}-${m}`;
+    })();
+
+    if (!PERIOD_PRESETS.has(preset)) {
+      return res.status(400).json({ message: "Invalid preset (month, quarter, half, year)" });
+    }
+    if (!/^\d{4}-\d{2}$/.test(anchor)) {
+      return res.status(400).json({ message: "anchor must be YYYY-MM" });
+    }
+
+    const bounds = getPeriodBounds(preset, anchor);
+    if (!bounds) {
+      return res.status(400).json({ message: "Invalid period" });
+    }
+
+    const [current, previous] = await Promise.all([
+      aggregatePeriod(req.user._id, bounds.start, bounds.end),
+      aggregatePeriod(req.user._id, bounds.previous.start, bounds.previous.end),
+    ]);
+
+    res.json({
+      preset,
+      anchor,
+      labelKey: bounds.labelKey,
+      periodStart: bounds.start.toISOString(),
+      periodEnd: bounds.end.toISOString(),
+      ...current,
+      previousPeriod: {
+        totalIncome: previous.totalIncome,
+        totalExpenses: previous.totalExpenses,
+        balance: previous.balance,
+        expenseCount: previous.expenseCount,
+        incomeCount: previous.incomeCount,
+      },
+    });
+  } catch (err) {
+    console.error("Period insights error:", err);
+    res.status(500).json({ message: "Failed to fetch period insights" });
+  }
+};
+
 const getDayDetail = async (req, res) => {
   try {
     const { date } = req.query;
@@ -434,4 +666,5 @@ module.exports = {
   getMonthlySummary,
   getDailySummary,
   getDayDetail,
+  getPeriodInsights,
 };
