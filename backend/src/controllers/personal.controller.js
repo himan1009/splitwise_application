@@ -608,6 +608,51 @@ const getPeriodInsights = async (req, res) => {
   }
 };
 
+const exportEntriesCsv = async (req, res) => {
+  try {
+    const { month } = req.query;
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ message: "month query required (YYYY-MM)" });
+    }
+
+    const range = parseMonth(month);
+    if (!range) {
+      return res.status(400).json({ message: "Invalid month format" });
+    }
+
+    const entries = await PersonalEntry.find({
+      userId: req.user._id,
+      date: { $gte: range.start, $lte: range.end },
+    })
+      .sort({ date: -1 })
+      .lean();
+
+    const esc = (v) => {
+      const s = String(v ?? "");
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+
+    const lines = [
+      ["date", "type", "category", "amount", "message"].map(esc).join(","),
+      ...entries.map((e) => {
+        const d = new Date(e.date);
+        const dateKey = toLocalDateKey(d);
+        return [dateKey, e.type, e.category, e.amount.toFixed(2), e.message || ""]
+          .map(esc)
+          .join(",");
+      }),
+    ];
+
+    const csv = lines.join("\n");
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="fintrack-${month}.csv"`);
+    res.send(csv);
+  } catch (err) {
+    console.error("Export entries error:", err);
+    res.status(500).json({ message: "Failed to export entries" });
+  }
+};
+
 const getDayDetail = async (req, res) => {
   try {
     const { date } = req.query;
@@ -667,4 +712,5 @@ module.exports = {
   getDailySummary,
   getDayDetail,
   getPeriodInsights,
+  exportEntriesCsv,
 };

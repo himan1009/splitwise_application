@@ -207,6 +207,84 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
+function computeGroupNetForUser(expenses, myId) {
+  const me = myId.toString();
+  const summaryMap = {};
+
+  expenses.forEach((exp) => {
+    const payerId = (exp.paidBy?._id || exp.paidBy).toString();
+    exp.splits.forEach((split) => {
+      const uid = (split.user?._id || split.user).toString();
+      const amt = Number(split.amount);
+      if (payerId === me && uid !== me) {
+        summaryMap[uid] = (summaryMap[uid] || 0) + amt;
+      }
+      if (payerId !== me && uid === me) {
+        summaryMap[payerId] = (summaryMap[payerId] || 0) - amt;
+      }
+    });
+  });
+
+  let owedToYou = 0;
+  let youOwe = 0;
+  Object.values(summaryMap).forEach((val) => {
+    if (val > 0.01) owedToYou += val;
+    if (val < -0.01) youOwe += Math.abs(val);
+  });
+
+  return {
+    owedToYou: parseFloat(owedToYou.toFixed(2)),
+    youOwe: parseFloat(youOwe.toFixed(2)),
+    net: parseFloat((owedToYou - youOwe).toFixed(2)),
+  };
+}
+
+/* ======================================================
+   GROUP OVERVIEW (balances + activity)
+====================================================== */
+router.get("/overview", auth, async (req, res) => {
+  try {
+    const myId = req.user._id;
+    const groups = await Group.find({ members: myId })
+      .select("_id name members createdBy")
+      .lean();
+
+    const overviews = await Promise.all(
+      groups.map(async (group) => {
+        const expenses = await Expense.find({ groupId: group._id }).lean();
+        const totalSpend = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+        const net = computeGroupNetForUser(expenses, myId);
+        const lastExpense = expenses.reduce((latest, e) => {
+          const t = new Date(e.recordedAt || e.createdAt).getTime();
+          return t > latest ? t : latest;
+        }, 0);
+
+        return {
+          groupId: group._id,
+          name: group.name,
+          memberCount: group.members.length,
+          expenseCount: expenses.length,
+          totalSpend,
+          ...net,
+          lastActivity: lastExpense ? new Date(lastExpense).toISOString() : null,
+          isAdmin: group.createdBy.toString() === myId.toString(),
+        };
+      })
+    );
+
+    overviews.sort((a, b) => {
+      const ta = a.lastActivity ? new Date(a.lastActivity).getTime() : 0;
+      const tb = b.lastActivity ? new Date(b.lastActivity).getTime() : 0;
+      return tb - ta;
+    });
+
+    res.json(overviews);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to load group overview" });
+  }
+});
+
 /* ======================================================
    🔥 GET USERS NOT IN THIS GROUP (THIS FIXES YOUR ISSUE)
 ====================================================== */

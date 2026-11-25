@@ -21,6 +21,8 @@ import {
   DISCRETIONARY_CATEGORIES,
   ESSENTIAL_CATEGORIES,
 } from "../utils/spendingInsights";
+import EssentialSpendCard from "../components/EssentialSpendCard";
+import SecurityNotice from "../components/SecurityNotice";
 
 export default function Insights() {
   const [preset, setPreset] = useState("month");
@@ -29,6 +31,7 @@ export default function Insights() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [focusCategory, setFocusCategory] = useState(null);
+  const [spendLens, setSpendLens] = useState("all");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -76,6 +79,28 @@ export default function Insights() {
     raw && raw.totalIncome > 0 ? (raw.balance / raw.totalIncome) * 100 : null;
 
   const title = raw ? formatPeriodTitle(preset, anchor, raw.labelKey) : "Insights";
+
+  const lensExpenseCategories = useMemo(() => {
+    if (!bundle?.expenseCategories) return [];
+    if (spendLens === "essential") {
+      return bundle.expenseCategories.filter((c) => c.isEssential);
+    }
+    if (spendLens === "lifestyle") {
+      return bundle.expenseCategories.filter((c) => c.isDiscretionary);
+    }
+    return bundle.expenseCategories;
+  }, [bundle, spendLens]);
+
+  const lensSpendRank = useMemo(() => {
+    if (!bundle?.spendRank) return [];
+    if (spendLens === "essential") {
+      return bundle.spendRank.filter((r) => ESSENTIAL_CATEGORIES.includes(r.id));
+    }
+    if (spendLens === "lifestyle") {
+      return bundle.spendRank.filter((r) => DISCRETIONARY_CATEGORIES.includes(r.id));
+    }
+    return bundle.spendRank;
+  }, [bundle, spendLens]);
 
   if (loading && !raw) {
     return <PageLoader message="Building your insights..." />;
@@ -138,6 +163,23 @@ export default function Insights() {
               onChange={(e) => setAnchor(e.target.value)}
             />
           </label>
+        </div>
+
+        <div className="flex flex-wrap gap-2 pt-1">
+          {[
+            { id: "all", label: "All spend" },
+            { id: "essential", label: "Essentials focus" },
+            { id: "lifestyle", label: "Lifestyle focus" },
+          ].map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              className={spendLens === l.id ? "txn-chip txn-chip-active" : "txn-chip"}
+              onClick={() => setSpendLens(l.id)}
+            >
+              {l.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -202,6 +244,14 @@ export default function Insights() {
             ))}
           </div>
 
+          {raw.totalExpenses > 0 && (
+            <EssentialSpendCard
+              byCategory={raw.byCategory || []}
+              totalExpenses={raw.totalExpenses}
+              title="Period essentials vs lifestyle"
+            />
+          )}
+
           {bundle.core && (
             <ReportHealthCard score={bundle.core.healthScore} health={bundle.core.health} />
           )}
@@ -252,7 +302,7 @@ export default function Insights() {
             <h3 className="section-title mb-2">Where you spend more</h3>
             <p className="text-dim text-sm mb-4">Ranked categories — tap to highlight below</p>
             <div className="insights-rank-grid">
-              {bundle.spendRank.map((row) => (
+              {lensSpendRank.map((row) => (
                 <button
                   key={row.id}
                   type="button"
@@ -287,8 +337,8 @@ export default function Insights() {
               icon="📉"
               categories={
                 focusCategory
-                  ? bundle.expenseCategories.filter((c) => c._id === focusCategory)
-                  : bundle.expenseCategories
+                  ? lensExpenseCategories.filter((c) => c._id === focusCategory)
+                  : lensExpenseCategories
               }
               totalAmount={raw.totalExpenses}
               totalLabel="total spent"
@@ -343,6 +393,8 @@ export default function Insights() {
               ))}
             </ul>
           </div>
+
+          <SecurityNotice compact />
 
           <div className="flex flex-wrap gap-3 justify-center pb-4">
             <Link to="/tracker" className="btn-primary !px-6">

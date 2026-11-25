@@ -3502,3 +3502,60 @@ body.modal-open .mobile-bottom-nav {
 .insights-promo-link:hover {
   border-color: rgba(29, 158, 117, 0.45);
 }
+
+/* ─── Transaction toolbar & chips ─── */
+.txn-toolbar {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.txn-chip {
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: #94a3b8;
+  min-height: 2.25rem;
+}
+
+.txn-chip-active {
+  border-color: rgba(29, 158, 117, 0.45);
+  background: rgba(29, 158, 117, 0.12);
+  color: #6ee7b7;
+}
+
+.essential-spend-card {
+  border-color: rgba(29, 158, 117, 0.15);
+}
+
+.essential-spend-track {
+  display: flex;
+  height: 0.65rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.essential-spend-fill {
+  height: 100%;
+}
+
+.essential-spend-fill.essential {
+  background: #1d9e75;
+}
+
+.essential-spend-fill.discretionary {
+  background: #f59e0b;
+}
+
+.essential-spend-fill.other {
+  background: #64748b;
+}
+
+.security-notice-card {
+  border-color: rgba(99, 102, 241, 0.2);
+  background: rgba(99, 102, 241, 0.06);
+}

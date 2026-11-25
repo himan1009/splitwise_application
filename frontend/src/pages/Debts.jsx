@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../api/api";
 import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "../utils/format";
@@ -8,11 +8,14 @@ import { isSameUser, summarizeDebtsByPerson, getRecentDebtsByDate, formatDebtTim
 import { getStoredUserId } from "../utils/auth";
 
 import { getApiErrorMessage } from "../utils/apiErrors";
+import SecurityNotice from "../components/SecurityNotice";
 
 export default function Debts() {
   const [debts, setDebts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [search, setSearch] = useState("");
+  const [balanceFilter, setBalanceFilter] = useState("all");
   const navigate = useNavigate();
   const myId = getStoredUserId();
 
@@ -35,22 +38,44 @@ export default function Debts() {
     }
   };
 
+  const { personalSummary, activeDebts, settledDebts, totalOwed, totalOwing, netPosition, recentByDate } =
+    useMemo(() => {
+      const summary = summarizeDebtsByPerson(debts, myId);
+      const active = summary.filter((p) => Math.abs(p.amount) >= 0.01);
+      const settled = summary.filter((p) => Math.abs(p.amount) < 0.01);
+      const owed = active.filter((p) => p.amount > 0).reduce((s, p) => s + p.amount, 0);
+      const owing = active.filter((p) => p.amount < 0).reduce((s, p) => s + Math.abs(p.amount), 0);
+      return {
+        personalSummary: summary,
+        activeDebts: active,
+        settledDebts: settled,
+        totalOwed: owed,
+        totalOwing: owing,
+        netPosition: owed - owing,
+        recentByDate: getRecentDebtsByDate(debts, 12),
+      };
+    }, [debts, myId]);
+
+  const filteredActive = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return activeDebts.filter((p) => {
+      if (q && !p.name.toLowerCase().includes(q)) return false;
+      if (balanceFilter === "owed" && p.amount <= 0) return false;
+      if (balanceFilter === "owe" && p.amount >= 0) return false;
+      if (balanceFilter === "settled") return false;
+      return true;
+    });
+  }, [activeDebts, search, balanceFilter]);
+
+  const filteredSettled = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (balanceFilter === "owed" || balanceFilter === "owe") return [];
+    return settledDebts.filter((p) => !q || p.name.toLowerCase().includes(q));
+  }, [settledDebts, search, balanceFilter]);
+
   if (loading) {
     return <PageLoader message="Loading debts..." />;
   }
-
-  const personalSummary = summarizeDebtsByPerson(debts, myId);
-  const activeDebts = personalSummary.filter((p) => Math.abs(p.amount) >= 0.01);
-  const settledDebts = personalSummary.filter((p) => Math.abs(p.amount) < 0.01);
-
-  const totalOwed = activeDebts
-    .filter((p) => p.amount > 0)
-    .reduce((s, p) => s + p.amount, 0);
-  const totalOwing = activeDebts
-    .filter((p) => p.amount < 0)
-    .reduce((s, p) => s + Math.abs(p.amount), 0);
-
-  const recentByDate = getRecentDebtsByDate(debts, 12);
 
   return (
     <div className="page-container space-y-6">
@@ -73,8 +98,35 @@ export default function Debts() {
         </div>
       )}
 
+      <div className="card !p-3 flex flex-col sm:flex-row gap-3">
+        <input
+          type="search"
+          className="input !py-2.5 flex-1"
+          placeholder="Search by name…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <div className="flex flex-wrap gap-2">
+          {[
+            { id: "all", label: "All" },
+            { id: "owed", label: "Owed to me" },
+            { id: "owe", label: "I owe" },
+            { id: "settled", label: "Settled" },
+          ].map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className={balanceFilter === f.id ? "txn-chip txn-chip-active" : "txn-chip"}
+              onClick={() => setBalanceFilter(f.id)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="detail-hero detail-hero-indigo">
-        <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="relative z-10 grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div>
             <p className="text-white/60 text-xs font-semibold uppercase tracking-wide">You're owed</p>
             <p className="text-2xl font-bold text-emerald-300 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
@@ -93,14 +145,28 @@ export default function Debts() {
               {personalSummary.length}
             </p>
           </div>
+          <div>
+            <p className="text-white/60 text-xs font-semibold uppercase tracking-wide">Net position</p>
+            <p
+              className={`text-2xl font-bold mt-1 ${
+                netPosition >= 0 ? "text-emerald-300" : "text-rose-300"
+              }`}
+              style={{ fontFamily: "Outfit, sans-serif" }}
+            >
+              {netPosition >= 0 ? "+" : "−"}
+              {formatCurrency(Math.abs(netPosition))}
+            </p>
+          </div>
         </div>
       </div>
 
-      {activeDebts.length > 0 && (
+      <SecurityNotice />
+
+      {filteredActive.length > 0 && balanceFilter !== "settled" && (
         <div className="card">
           <h2 className="section-title mb-5">Active balances</h2>
           <div className="space-y-3">
-            {activeDebts.map((p) => (
+            {filteredActive.map((p) => (
               <DebtBalanceRow
                 key={p._id}
                 name={p.name}
@@ -112,14 +178,14 @@ export default function Debts() {
         </div>
       )}
 
-      {settledDebts.length > 0 && (
+      {filteredSettled.length > 0 && (
         <div className="card">
           <h2 className="section-title mb-2">Settled</h2>
           <p className="text-sm text-dim mb-5">
             These people are fully settled. Tap to see full loan & payment history.
           </p>
           <div className="space-y-3">
-            {settledDebts.map((p) => (
+            {filteredSettled.map((p) => (
               <button
                 key={p._id}
                 type="button"

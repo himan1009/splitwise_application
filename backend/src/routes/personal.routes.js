@@ -8,6 +8,7 @@ router.use(auth);
 router.get("/categories", c.getCategories);
 router.post("/entries", c.createEntry);
 router.get("/entries", c.getEntries);
+router.get("/entries/export", c.exportEntriesCsv);
 router.put("/entries/:id", c.updateEntry);
 router.delete("/entries/:id", c.deleteEntry);
 router.get("/summary/monthly", c.getMonthlySummary);

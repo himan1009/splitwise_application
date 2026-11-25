@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/api";
 import AddEntryModal from "../components/AddEntryModal";
@@ -28,6 +28,10 @@ import {
   buildIncomeCategoryAnalytics,
 } from "../utils/categoryAnalytics";
 import { IconCalendar, IconChart, IconList, IconTag } from "../components/ui/Icons";
+import EssentialSpendCard from "../components/EssentialSpendCard";
+import TransactionToolbar from "../components/TransactionToolbar";
+import { filterTransactions, sortTransactions } from "../utils/transactionFilters";
+import { downloadTextFile, entriesToCsv } from "../utils/exportCsv";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -46,6 +50,10 @@ export default function MonthlyTracker() {
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [txnQuery, setTxnQuery] = useState("");
+  const [txnType, setTxnType] = useState("all");
+  const [txnLens, setTxnLens] = useState("all");
+  const [txnSort, setTxnSort] = useState("date_desc");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -136,9 +144,35 @@ export default function MonthlyTracker() {
     totalIncome,
   });
 
-  const filteredEntries = categoryFilter
-    ? entries.filter((e) => e.category === categoryFilter)
-    : entries;
+  const filteredEntries = useMemo(() => {
+    const base = categoryFilter ? entries.filter((e) => e.category === categoryFilter) : entries;
+    const filtered = filterTransactions(base, {
+      query: txnQuery,
+      type: txnType,
+      lens: txnLens,
+    });
+    return sortTransactions(filtered, txnSort);
+  }, [entries, categoryFilter, txnQuery, txnType, txnLens, txnSort]);
+
+  const handleExportMonth = async () => {
+    try {
+      const res = await api.get("/personal/entries/export", {
+        params: { month },
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `fintrack-${month}.csv`;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      downloadTextFile(`fintrack-${month}.csv`, entriesToCsv(filteredEntries, month));
+    }
+  };
 
   const handleCategoryClick = (cat) => {
     setCategoryFilter(cat._id);
@@ -209,6 +243,10 @@ export default function MonthlyTracker() {
           <p className="metric-value">{formatCurrency(balance)}</p>
         </div>
       </div>
+
+      {summary && summary.totalExpenses > 0 && (
+        <EssentialSpendCard byCategory={summary.byCategory || []} totalExpenses={totalExpenses} />
+      )}
 
       {/* Spending progress */}
       {summary && summary.totalIncome > 0 && (
@@ -386,6 +424,19 @@ export default function MonthlyTracker() {
       {/* List view */}
       {view === "list" && (
         <div className="card !p-2 sm:!p-3">
+          <TransactionToolbar
+            query={txnQuery}
+            onQueryChange={setTxnQuery}
+            type={txnType}
+            onTypeChange={setTxnType}
+            lens={txnLens}
+            onLensChange={setTxnLens}
+            sortBy={txnSort}
+            onSortChange={setTxnSort}
+            onExport={handleExportMonth}
+            resultCount={filteredEntries.length}
+            totalCount={entries.length}
+          />
           {categoryFilter && (
             <div className="flex items-center justify-between gap-3 px-3 py-2 mb-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
               <p className="text-sm text-emerald-300">

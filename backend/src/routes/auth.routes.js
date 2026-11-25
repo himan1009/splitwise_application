@@ -3,9 +3,29 @@ const router = express.Router();
 
 const authController = require("../controllers/auth.controller");
 const auth = require("../middleware/auth");
+const rateLimit = require("../middleware/rateLimit");
 
-router.post("/register", authController.register);
-router.post("/login", authController.login);
+const authBurstLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  message: "Too many attempts. Please wait and try again.",
+});
+
+const sensitiveAuthLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: "Too many login attempts. Please wait 15 minutes.",
+});
+
+router.use((req, res, next) => {
+  req.rateLimitPrefix = "auth";
+  next();
+});
+
+router.use(authBurstLimit);
+
+router.post("/register", sensitiveAuthLimit, authController.register);
+router.post("/login", sensitiveAuthLimit, authController.login);
 router.get("/verify-email", authController.verifyEmail);
 router.get("/confirm-email-change", authController.confirmEmailChange);
 router.post("/resend-verification", authController.resendVerification);
@@ -13,8 +33,8 @@ router.post("/resend-verification/me", auth, authController.resendVerification);
 router.post("/verify-current-email", auth, authController.verifyCurrentEmail);
 router.post("/change-email", auth, authController.requestEmailChange);
 router.post("/cancel-email-change", auth, authController.cancelEmailChange);
-router.post("/forgot-password", authController.forgotPassword);
-router.post("/reset-password", authController.resetPassword);
+router.post("/forgot-password", sensitiveAuthLimit, authController.forgotPassword);
+router.post("/reset-password", sensitiveAuthLimit, authController.resetPassword);
 router.get("/me", auth, authController.getProfile);
 
 /* delete account */
