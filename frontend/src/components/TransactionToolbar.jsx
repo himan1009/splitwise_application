@@ -12,16 +12,17 @@ export default function TransactionToolbar({
   totalCount,
 }) {
   return (
-    <div className="txn-toolbar space-y-3">
+    <div className="txn-toolbar">
       <input
         type="search"
-        className="input !py-2.5"
+        className="input txn-search"
         placeholder="Search category, note…"
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         autoComplete="off"
       />
-      <div className="flex flex-wrap gap-2">
+
+      <div className="txn-chip-row" role="group" aria-label="Transaction type">
         {[
           { id: "all", label: "All" },
           { id: "expense", label: "Expenses" },
@@ -37,26 +38,29 @@ export default function TransactionToolbar({
           </button>
         ))}
       </div>
-      <div className="flex flex-wrap gap-2 items-center justify-between">
-        <div className="flex flex-wrap gap-2">
-          {[
-            { id: "all", label: "Every category" },
-            { id: "essential", label: "Essentials only" },
-            { id: "lifestyle", label: "Lifestyle only" },
-          ].map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className={lens === t.id ? "txn-chip txn-chip-active" : "txn-chip"}
-              onClick={() => onLensChange(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2 items-center">
+
+      <div className="txn-chip-row" role="group" aria-label="Category lens">
+        {[
+          { id: "all", label: "Every category" },
+          { id: "essential", label: "Essentials" },
+          { id: "lifestyle", label: "Lifestyle" },
+        ].map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className={lens === t.id ? "txn-chip txn-chip-active" : "txn-chip"}
+            onClick={() => onLensChange(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="txn-toolbar-actions">
+        <label className="txn-sort-field">
+          <span className="txn-field-label">Sort</span>
           <select
-            className="input !py-2 !text-sm !w-auto min-w-[9rem]"
+            className="input input-select txn-sort-select"
             value={sortBy}
             onChange={(e) => onSortChange(e.target.value)}
             aria-label="Sort transactions"
@@ -66,12 +70,13 @@ export default function TransactionToolbar({
             <option value="amount_desc">Highest amount</option>
             <option value="amount_asc">Lowest amount</option>
           </select>
-          <button type="button" className="btn-secondary !text-sm !py-2" onClick={onExport}>
-            Export CSV
-          </button>
-        </div>
+        </label>
+        <button type="button" className="btn-secondary txn-export-btn" onClick={onExport}>
+          Export CSV
+        </button>
       </div>
-      <p className="text-xs text-dim">
+
+      <p className="txn-toolbar-meta text-xs text-dim">
         Showing {resultCount} of {totalCount} transaction{totalCount !== 1 ? "s" : ""}
       </p>
     </div>

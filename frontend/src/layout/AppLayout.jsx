@@ -39,6 +39,11 @@ export default function AppLayout({ setIsAuthenticated }) {
 
   return (
     <div className="app-shell">
+      <div className="app-brand-ambient" aria-hidden="true">
+        <div className="app-bg-aurora app-bg-aurora-1" />
+        <div className="app-bg-aurora app-bg-aurora-2" />
+        <div className="app-bg-grid" />
+      </div>
       <header className="app-header safe-top">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14 sm:h-16">
@@ -48,7 +53,9 @@ export default function AppLayout({ setIsAuthenticated }) {
               type="button"
             >
               <BrandMark size={32} />
-              <span className="app-logo-text">FinTrack</span>
+              <span className="app-logo-text">
+                Fin<span className="app-logo-accent">Track</span>
+              </span>
             </button>
 
             <nav className="hidden lg:flex items-center gap-1">

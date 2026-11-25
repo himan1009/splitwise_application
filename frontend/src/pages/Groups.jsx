@@ -211,24 +211,29 @@ export default function Groups() {
 
 function motionControls({ search, setSearch, sortBy, setSortBy }) {
   return (
-    <div className="card !p-3 flex flex-col sm:flex-row gap-3 sm:items-center">
-      <input
-        type="search"
-        className="input !py-2.5 flex-1"
-        placeholder="Search groups…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-      <select
-        className="input !py-2.5 !w-auto min-w-[10rem]"
-        value={sortBy}
-        onChange={(e) => setSortBy(e.target.value)}
-        aria-label="Sort groups"
-      >
-        <option value="activity">Recent activity</option>
-        <option value="balance">Largest balance</option>
-        <option value="name">Name A–Z</option>
-      </select>
+    <div className="card !p-3">
+      <div className="txn-toolbar-actions !grid-cols-1 sm:!grid-cols-[1fr_11rem]">
+        <input
+          type="search"
+          className="input txn-search"
+          placeholder="Search groups…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <label className="txn-sort-field">
+          <span className="txn-field-label">Sort</span>
+          <select
+            className="input input-select txn-sort-select"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            aria-label="Sort groups"
+          >
+            <option value="activity">Recent activity</option>
+            <option value="balance">Largest balance</option>
+            <option value="name">Name A–Z</option>
+          </select>
+        </label>
+      </div>
     </div>
   );
 }
